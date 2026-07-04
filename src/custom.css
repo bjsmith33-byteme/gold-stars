@@ -1,0 +1,39 @@
+/* Small custom touches on top of Bootstrap 5.3. Bootstrap handles layout, spacing,
+   and light/dark theming (via data-bs-theme); this file only adds the few things
+   Bootstrap utilities don't cover: specialty badge colors and the My Stats bar charts. */
+
+/* Specialty badges (the cosmetic "role"). Colors chosen to read on light + dark. */
+.badge-specialty {
+  color: #fff;
+}
+.badge-Frontend {
+  background-color: #0d6efd;
+}
+.badge-Backend {
+  background-color: #198754;
+}
+.badge-Mobile {
+  background-color: #6f42c1;
+}
+.badge-Full-stack {
+  background-color: #fd7e14;
+  color: #1a1a1a;
+}
+
+/* My Stats bar charts — heights/widths are set inline per data point; these classes
+   just style the fill. Uses the Bootstrap warning (amber) accent to echo the star. */
+.stat-bar {
+  background-color: var(--bs-warning);
+  border-radius: 0.25rem;
+  min-height: 2px;
+}
+.stat-bar-track {
+  background-color: var(--bs-secondary-bg);
+  border-radius: 0.25rem;
+}
+
+/* Keep the leaderboard "medal" column from wrapping. */
+.medal-cell {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}

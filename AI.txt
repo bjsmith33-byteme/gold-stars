@@ -1,0 +1,17 @@
+# AI Task Log
+# A running record of tasks requested of the AI assistant on this repo.
+# Format: YYYY-MM-DD  <task summary>
+
+2026-07-03  Initial build: created this public, generic "Gold Stars" recognition app
+            from a private predecessor. Stack: Vite + React (plain JSX, no TypeScript) +
+            React-Bootstrap + React Router (declarative, HashRouter). Features: all-time
+            leaderboard, monthly winners, Supporter of the Month, By-Knowledge-Area
+            (React/JavaScript/CSS/SwiftUI), a searchable Knowledge Base on its own page,
+            My Stats, an offcanvas side-nav, light/dark theme, and email-only nominations.
+            Data is a hand-editable dummy public/gold-stars.csv (~20 fake names). Builds to
+            docs/ for GitHub Pages (base /gold-stars/).
+2026-07-03  Added a star favicon; capped the leaderboard to the top 4 places (top 3 if
+            4th place is tied); fixed contrast (neutral navbar so the star is visible,
+            bolder winner-banner text, outlined the Award button's star).
+2026-07-03  Scoped the leaderboard top-4 cap to the all-time board only (monthly boards
+            now show everyone); added more React tips to the knowledge base.
