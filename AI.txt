@@ -22,6 +22,53 @@ Key choices behind the public "Gold Stars" site and why:
 - Light/dark via Bootstrap's data-bs-theme, with a pre-paint script to avoid a flash.
 - Contact/nomination email, the roster, and the CSV rows are PLACEHOLDERS to be replaced.
 
+## Background: design history (from the predecessor)
+This app grew out of an internal team's recognition board. The reasoning that shaped it,
+kept generic here since this repo is public:
+
+Which details to show, and how:
+- One "gold star" per helpful contribution. The board shows the recipient, their
+  role/specialty, the knowledge area, and a star count — recognition, never criticism.
+- Standard competition ranking (ties share a place), tie-aware winners, and medals.
+- The nominator (who gave the kudos) is stored but NOT shown on the board — it stays
+  behind the scenes and instead powers a "Supporter of the Month" (top kudos-giver).
+- Alongside the leaderboard: monthly winners, a per-knowledge-area breakdown to surface
+  the growing expert in each area, a personal "My Stats" view (total, rank, a month-by-
+  month trend, area mix, recent stars), and a Knowledge Base.
+- Self-answers count if the person did the research; good questions are encouraged too.
+
+How data is stored:
+- A single flat file (CSV), one row per award, read live at view time — no backend or
+  database. Columns: date, recipient, role, category, note, source, nominator, sub-topic.
+- The note field does double duty: any row with a note becomes a Knowledge Base entry
+  (problem -> solution), so the board and the KB share one source of truth.
+- Chose a plain, hand-editable, version-controlled file for simplicity and transparency.
+
+How data is collected:
+- Primary: a web form that composes a row and hands it off by email, so a human reviews
+  it before it's added — no direct write access to the data needed.
+- Also explored auto-collecting kudos from team-chat messages (a message with a star and
+  who it's for). Lesson learned: the chat platform's API returned only ONE reaction per
+  message, so reading emoji *reactions* was unworkable — the design switched to parsing
+  message *text + mentions*, pulled on a schedule, with a watchdog to alert on failed runs.
+
+Future ideas discussed (not all built):
+- Recognize learners, not just answerers — a "Learner of the Month" for the best
+  question-askers (needs capturing who asked).
+- Optional email-on-award to the recipient and/or their manager/lead.
+- A dedicated, searchable Knowledge Base page (built in this public version).
+- A curated "Question of the Month"; an automated summarizer to turn raw Q&A into clean
+  KB notes; a personal "curiosity" stat (questions asked that became KB entries).
+
+Ideas considered and rejected (and why):
+- A wiki-style page — no dynamic data or aggregation.
+- A reporting/BI summary page — not self-service; needed platform-team setup.
+- Reading chat emoji reactions via the platform API — only one reaction per message.
+- A popular test runner whose binary was blocked in the environment — used the language's
+  built-in test runner instead.
+- For this public version specifically: dropped the team/sub-group ("Friends") split for
+  simplicity, and dropped chat + direct-file editing in favor of email-only nominations.
+
 ## Task log
 Format: YYYY-MM-DD  <task summary>
 
@@ -40,3 +87,6 @@ Format: YYYY-MM-DD  <task summary>
             now show everyone); added more React tips to the knowledge base.
 2026-07-03  Aligned the nav menu with its button — changed the Offcanvas placement to
             "end" so it opens from the right, under the hamburger toggle.
+2026-07-03  Added a "Background: design history" section documenting the predecessor's
+            decisions (what to show, how to store/collect data) plus future & rejected
+            ideas — sanitized (no internal names, IDs, product areas, or tooling).
