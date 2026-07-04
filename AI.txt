@@ -1,6 +1,29 @@
-# AI Task Log
-# A running record of tasks requested of the AI assistant on this repo.
-# Format: YYYY-MM-DD  <task summary>
+# AI Assistant Notes for this repo
+
+## Design decisions (initial build)
+Key choices behind the public "Gold Stars" site and why:
+
+- Plain JavaScript / JSX (no TypeScript) — kept the code easy to read and hand-edit.
+- React-Bootstrap (Bootstrap 5.3) — responsive/mobile-friendly out of the box; its
+  Offcanvas powers the side-nav ("sheet" on mobile).
+- React Router in declarative mode with HashRouter — GitHub Pages has no single-page-app
+  fallback, so hash routes (#/kb, #/about) work without any server config or 404 redirect.
+- Data is a single hand-editable CSV (public/gold-stars.csv) read live at runtime — no
+  backend or database. Knowledge areas are React / JavaScript / CSS / SwiftUI; the roster
+  is ~20 diverse fake names in src/lib/roster.js. All sample content is dummy data.
+- One unified leaderboard (no team/sub-group split) to keep the public version simple.
+- The "role" field is just a cosmetic specialty badge (Frontend/Backend/Mobile/Full-stack);
+  it doesn't gate anything.
+- Nominations are email-only (a mailto: from the Award form). A static public site has no
+  backend and shouldn't expose direct data access, so a human reviews before adding a row.
+- Deploy model: build to docs/ with base "/gold-stars/"; GitHub Pages serves from /docs.
+  Building does NOT publish — the site changes only when docs/ is committed and pushed
+  (intentional, for control over when changes go live). No CI.
+- Light/dark via Bootstrap's data-bs-theme, with a pre-paint script to avoid a flash.
+- Contact/nomination email, the roster, and the CSV rows are PLACEHOLDERS to be replaced.
+
+## Task log
+Format: YYYY-MM-DD  <task summary>
 
 2026-07-03  Initial build: created this public, generic "Gold Stars" recognition app
             from a private predecessor. Stack: Vite + React (plain JSX, no TypeScript) +
