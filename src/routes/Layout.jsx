@@ -58,7 +58,7 @@ export function Layout() {
             <ThemeToggle />
             <Navbar.Toggle aria-controls="main-nav" />
           </div>
-          <Navbar.Offcanvas id="main-nav" aria-labelledby="main-nav-title" placement="start">
+          <Navbar.Offcanvas id="main-nav" aria-labelledby="main-nav-title" placement="end">
             <Offcanvas.Header closeButton>
               <Offcanvas.Title id="main-nav-title">Menu</Offcanvas.Title>
             </Offcanvas.Header>

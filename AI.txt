@@ -38,3 +38,5 @@ Format: YYYY-MM-DD  <task summary>
             bolder winner-banner text, outlined the Award button's star).
 2026-07-03  Scoped the leaderboard top-4 cap to the all-time board only (monthly boards
             now show everyone); added more React tips to the knowledge base.
+2026-07-03  Aligned the nav menu with its button — changed the Offcanvas placement to
+            "end" so it opens from the right, under the hamburger toggle.
