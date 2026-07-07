@@ -90,3 +90,30 @@ Format: YYYY-MM-DD  <task summary>
 2026-07-03  Added a "Background: design history" section documenting the predecessor's
             decisions (what to show, how to store/collect data) plus future & rejected
             ideas — sanitized (no internal names, IDs, product areas, or tooling).
+2026-07-04  Added opt-in "Preview changes" mode: stage NEW stars locally (browser
+            localStorage), preview the board with them merged, edit/remove staged
+            entries, and Submit the batch by email for an admin to commit (no server;
+            add-only for v1 — editing/deleting published stars is a future v2). Includes
+            validation + formula-injection guard, defensive overlay parsing, and a sticky
+            "not published" banner. New: src/lib/overlay.js (+ tests), PreviewToggle,
+            DraftBanner, ReviewChangesPanel; AwardStarModal now supports a stage/edit mode.
+2026-07-05  Visual pass on the theme (src/custom.css). Introduced a --gs-* palette consumed
+            by all surfaces so the look is tuned in one place: pale-gold page, white cards,
+            soft-gold card/table headers + navbar + footer (all matching), warm-brown
+            borders/shadows, faint dividers between rows, de-highlighted specialty badges.
+            Warmed the navbar, carded the KB preview, themed the winner (gold) and supporter
+            cards. Gold (not gray) buttons in the header/footer. About subtitle set to
+            "A lightweight team recognition board." and the Preview toggle hidden on About.
+            Set the contact/nomination email to the project placeholder in one shared spot.
+2026-07-06  Replaced the static header poster IMAGE with a self-contained React component
+            (src/components/StarChartPosterboard.jsx) — inline SVG. Its "ink" (title, names,
+            ruled lines) follows the APP theme, not the OS: added src/lib/theme.js
+            (useBsTheme, a useSyncExternalStore hook that observes <html data-bs-theme>) so
+            it tracks the ThemeToggle. Gold/red/blue stars stay fixed in both themes. Dropped
+            the old dark-mode parchment backing (no longer needed) and removed the unused
+            public SVG.
+2026-07-06  Darkened the dark-mode palette a notch (page/card/header). Changed the My Stats
+            time-range pickers and the KB-preview Search button from gray to gold. Made the
+            "This Month" section use the same card layout as the past-month cards (winner
+            card nested inside, then leaderboard, then supporter), and added left/right edge
+            padding to the leaderboard tables so content isn't flush with the card edge.

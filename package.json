@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node --test src/lib/aggregate.test.js"
+    "test": "node --test src/lib/aggregate.test.js src/lib/overlay.test.js"
   },
   "dependencies": {
     "bootstrap": "^5.3.3",

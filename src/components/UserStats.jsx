@@ -78,7 +78,7 @@ export function UserStats({ events, selected, onSelect }) {
           {PERIODS.map((p) => (
             <Button
               key={p.key}
-              variant={period === p.key ? "warning" : "outline-secondary"}
+              variant={period === p.key ? "warning" : "outline-warning"}
               onClick={() => setPeriod(p.key)}
             >
               {p.label}

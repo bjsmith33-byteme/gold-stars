@@ -23,7 +23,7 @@ export function ThemeToggle() {
 
   return (
     <Button
-      variant="outline-secondary"
+      variant="outline-warning"
       size="sm"
       onClick={toggle}
       aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}

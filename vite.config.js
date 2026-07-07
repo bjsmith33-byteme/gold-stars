@@ -12,4 +12,21 @@ export default defineConfig({
     outDir: "docs",
     emptyOutDir: true,
   },
+  server: {
+    watch: {
+      // Don't watch image/binary assets — the app imports none (the favicon is static),
+      // and editing/generating a locked image in the project folder was crashing the dev
+      // file-watcher on Windows (EBUSY).
+      ignored: [
+        "**/*.png",
+        "**/*.svg",
+        "**/*.jpg",
+        "**/*.jpeg",
+        "**/*.gif",
+        "**/*.pdf",
+        "**/*.zip",
+      ],
+    },
+  },
 });
+

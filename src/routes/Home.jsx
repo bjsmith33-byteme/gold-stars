@@ -2,6 +2,9 @@ import { useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import Accordion from "react-bootstrap/Accordion";
 import Button from "react-bootstrap/Button";
+import Card from "react-bootstrap/Card";
+import Row from "react-bootstrap/Row";
+import Col from "react-bootstrap/Col";
 import Alert from "react-bootstrap/Alert";
 import Spinner from "react-bootstrap/Spinner";
 import { currentMonthKey, monthLabel, getMonth } from "../lib/aggregate.js";
@@ -13,11 +16,15 @@ import { CategoryBreakdown } from "../components/CategoryBreakdown.jsx";
 import { UserStats } from "../components/UserStats.jsx";
 import { KnowledgeBasePreview } from "../components/KnowledgeBasePreview.jsx";
 import { AwardStarModal } from "../components/AwardStarModal.jsx";
+import { ReviewChangesPanel } from "../components/ReviewChangesPanel.jsx";
+import StarChartPosterboard from "../components/StarChartPosterboard.jsx";
 
 export function Home() {
-  const { events, agg, error } = useOutletContext();
+  const { events, agg, error, previewMode, draft, addDraft, updateDraft, removeDraft, clearDraft } =
+    useOutletContext();
   const [showAward, setShowAward] = useState(false);
   const [person, setPerson] = useState("");
+  const [editRow, setEditRow] = useState(null);
 
   const jumpToPerson = (name) => {
     setPerson(name);
@@ -27,10 +34,10 @@ export function Home() {
   if (error) return <Alert variant="danger">⚠ {error}</Alert>;
   if (!agg) {
     return (
-      <p className="text-body-secondary">
+      <div className="text-body-secondary">
         <Spinner size="sm" animation="border" className="me-2" />
         Loading gold stars…
-      </p>
+      </div>
     );
   }
 
@@ -43,9 +50,43 @@ export function Home() {
   return (
     <div className="d-flex flex-column gap-4">
       {/* Header */}
-      <header className="text-center d-flex flex-column gap-3">
+      <header>
+        <Row className="align-items-center g-3 g-md-4">
+          <Col xs={12} md={6}>
+            <StarChartPosterboard
+              className="poster-panel"
+              style={{
+                padding: "0.5rem",
+                borderRadius: "0.5rem",
+                boxShadow: "0 1px 6px rgba(0, 0, 0, 0.15)",
+              }}
+            />
+          </Col>
+          <Col xs={12} md={6} className="d-flex flex-column gap-3 text-center text-md-start">
         <h1 className="fw-bold mb-0">⭐ Gold Stars</h1>
         <p className="text-body-secondary mb-0">Recognizing the people who help our team learn &amp; grow</p>
+        <div>
+          <Button
+            variant="warning"
+            size="lg"
+            className="fw-bold"
+            onClick={() => {
+              setEditRow(null);
+              setShowAward(true);
+            }}
+          >
+            <span
+              aria-hidden="true"
+              style={{
+                textShadow:
+                  "-1px -1px 0 #5c4600, 1px -1px 0 #5c4600, -1px 1px 0 #5c4600, 1px 1px 0 #5c4600",
+              }}
+            >
+              ⭐
+            </span>{" "}
+            {previewMode ? "Add a star to draft" : "Award a Star"}
+          </Button>
+        </div>
         <Accordion>
           <Accordion.Item eventKey="how">
             <Accordion.Header>How to earn a gold star ⭐</Accordion.Header>
@@ -66,21 +107,22 @@ export function Home() {
             </Accordion.Body>
           </Accordion.Item>
         </Accordion>
-        <div>
-          <Button variant="warning" size="lg" className="fw-bold" onClick={() => setShowAward(true)}>
-            <span
-              aria-hidden="true"
-              style={{
-                textShadow:
-                  "-1px -1px 0 #5c4600, 1px -1px 0 #5c4600, -1px 1px 0 #5c4600, 1px 1px 0 #5c4600",
-              }}
-            >
-              ⭐
-            </span>{" "}
-            Award a Star
-          </Button>
-        </div>
+          </Col>
+        </Row>
       </header>
+
+      {/* Review changes (Preview mode only) */}
+      {previewMode && (
+        <ReviewChangesPanel
+          draft={draft}
+          onEdit={(r) => {
+            setEditRow(r);
+            setShowAward(true);
+          }}
+          onRemove={removeDraft}
+          onClear={clearDraft}
+        />
+      )}
 
       {/* My Stats */}
       <section id="my-stats" className="d-flex flex-column gap-2" style={{ scrollMarginTop: "5rem" }}>
@@ -94,7 +136,7 @@ export function Home() {
       {/* All-Time Leaderboard */}
       <section className="d-flex flex-column gap-2">
         <h2 className="h4 fw-bold mb-0">🌟 All-Time Leaderboard</h2>
-        <div className="border rounded overflow-hidden">
+        <div className="border rounded overflow-hidden pop-surface">
           <Leaderboard tallies={agg.allTime} onSelectPerson={jumpToPerson} cap />
         </div>
       </section>
@@ -112,17 +154,21 @@ export function Home() {
         <p className="text-body-secondary small mb-1">
           Recent questions &amp; solutions — search or browse the full base before re-asking.
         </p>
-        <KnowledgeBasePreview events={events} />
+        <Card body>
+          <KnowledgeBasePreview events={events} />
+        </Card>
       </section>
 
-      {/* This Month */}
+      {/* This Month — same card layout as the past-month cards below. */}
       <section className="d-flex flex-column gap-2">
         <h2 className="h4 fw-bold mb-0">📅 This Month · {curLabel}</h2>
-        <WinnerBanner winners={curMonth?.winners ?? []} period={curLabel} />
-        <div className="border rounded overflow-hidden">
-          <Leaderboard tallies={curMonth?.tallies ?? []} onSelectPerson={jumpToPerson} />
-        </div>
-        <SupporterBanner supporters={curMonth?.supporters ?? []} period={curLabel} />
+        <Card>
+          <Card.Body className="d-flex flex-column gap-3">
+            <WinnerBanner winners={curMonth?.winners ?? []} period={curLabel} />
+            <Leaderboard tallies={curMonth?.tallies ?? []} onSelectPerson={jumpToPerson} />
+            <SupporterBanner supporters={curMonth?.supporters ?? []} period={curLabel} />
+          </Card.Body>
+        </Card>
       </section>
 
       {/* Past Months */}
@@ -139,7 +185,17 @@ export function Home() {
         )}
       </section>
 
-      <AwardStarModal show={showAward} onClose={() => setShowAward(false)} subTopics={subTopics} />
+      <AwardStarModal
+        show={showAward}
+        onClose={() => {
+          setShowAward(false);
+          setEditRow(null);
+        }}
+        subTopics={subTopics}
+        mode={previewMode ? "stage" : "email"}
+        initialRow={editRow}
+        onStage={editRow ? (r) => updateDraft(editRow.id, r) : addDraft}
+      />
     </div>
   );
 }

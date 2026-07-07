@@ -2,5 +2,14 @@ node_modules/
 *.local
 .DS_Store
 
+# Local design working files — source artwork/exports and scratch archives that live in
+# the repo root but aren't part of the app (the poster ships as an inline React component).
+files.zip
+starChartCrop.png
+star_chart_posterboard.png
+star_chart_posterboard.svg
+star_chart_posterboard_short.png
+star_chart_posterboard_short.svg
+
 # NOTE: docs/ is intentionally NOT ignored — it is the built site that GitHub Pages
 # serves. Commit docs/ when you're ready to publish.

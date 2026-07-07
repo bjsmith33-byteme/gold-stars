@@ -11,10 +11,10 @@ export function KnowledgeBasePage() {
   if (error) return <Alert variant="danger">⚠ {error}</Alert>;
   if (!agg) {
     return (
-      <p className="text-body-secondary">
+      <div className="text-body-secondary">
         <Spinner size="sm" animation="border" className="me-2" />
         Loading…
-      </p>
+      </div>
     );
   }
 
