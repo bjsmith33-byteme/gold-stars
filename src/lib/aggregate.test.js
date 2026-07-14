@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   aggregate,
   personStats,
+  personChartSeries,
   parseCsv,
   toCsvRow,
   monthLabel,
@@ -88,6 +89,28 @@ test("personStats returns total, rank, category mix, and recent (newest first)",
   assert.equal(s.rank, 1);
   assert.equal(s.recent[0].date, "2025-06-01");
   assert.deepEqual(s.byCategory.map((c) => c.category).sort(), ["CSS", "React"]);
+});
+
+test("personChartSeries aligns aggregate and faceted counts to one month axis", () => {
+  const events = [
+    ev({ date: "2025-05-10", recipient: "Priya Nair", category: "React" }),
+    ev({ date: "2025-06-05", recipient: "Priya Nair", category: "React" }),
+    ev({ date: "2025-06-20", recipient: "Priya Nair", category: "CSS" }),
+  ];
+  const s = personStats(events, "Priya Nair", { cutoff: "2025-05-01", today: "2025-06-15" });
+  const series = personChartSeries(s);
+
+  // May, June axis; aggregate = 1 in May, 2 in June.
+  assert.deepEqual(series.labels, s.byMonth.map((m) => m.label));
+  assert.deepEqual(series.aggregate, [1, 2]);
+
+  // Faceted: React 1/1 across May/June, CSS 0/1 — each aligned to the same axis.
+  const react = series.faceted.find((f) => f.category === "React");
+  const css = series.faceted.find((f) => f.category === "CSS");
+  assert.deepEqual(react.counts, [1, 1]);
+  assert.deepEqual(css.counts, [0, 1]);
+  // Every faceted series is the same length as the month axis.
+  for (const f of series.faceted) assert.equal(f.counts.length, series.labels.length);
 });
 
 test("parseCsv drops rows missing a recipient or a valid date, and trims", () => {

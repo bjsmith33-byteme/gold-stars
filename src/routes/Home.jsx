@@ -64,7 +64,27 @@ export function Home() {
           </Col>
           <Col xs={12} md={6} className="d-flex flex-column gap-3 text-center text-md-start">
         <h1 className="fw-bold mb-0">⭐ Gold Stars</h1>
-        <p className="text-body-secondary mb-0">Recognizing the people who help our team learn &amp; grow</p>
+        <p className="text-body-secondary mb-0">Let&apos;s learn and grow together</p>
+        <Accordion>
+          <Accordion.Item eventKey="how">
+            <Accordion.Header>How to earn a gold star ⭐</Accordion.Header>
+            <Accordion.Body className="text-start">
+              <p>
+                Help a teammate <strong>troubleshoot an issue</strong>, make a{" "}
+                <strong>recommendation</strong>, or answer a question about{" "}
+                <strong>how or why something works</strong> — demonstrating deep knowledge and
+                sharing it to lift up the whole team. It counts across{" "}
+                <strong>React</strong>, <strong>JavaScript</strong>, <strong>CSS</strong>, and{" "}
+                <strong>SwiftUI</strong>.
+              </p>
+              <p className="mb-0">
+                Answering your <em>own</em> question counts too, as long as you did the research to
+                get there. And good <strong>questions</strong> are welcome — they grow the shared
+                knowledge base for everyone.
+              </p>
+            </Accordion.Body>
+          </Accordion.Item>
+        </Accordion>
         <div>
           <Button
             variant="warning"
@@ -87,26 +107,6 @@ export function Home() {
             {previewMode ? "Add a star to draft" : "Award a Star"}
           </Button>
         </div>
-        <Accordion>
-          <Accordion.Item eventKey="how">
-            <Accordion.Header>How to earn a gold star ⭐</Accordion.Header>
-            <Accordion.Body className="text-start">
-              <p>
-                Help a teammate <strong>troubleshoot an issue</strong>, make a{" "}
-                <strong>recommendation</strong>, or answer a question about{" "}
-                <strong>how or why something works</strong> — demonstrating deep knowledge and
-                sharing it to lift up the whole team. It counts across{" "}
-                <strong>React</strong>, <strong>JavaScript</strong>, <strong>CSS</strong>, and{" "}
-                <strong>SwiftUI</strong>.
-              </p>
-              <p className="mb-0">
-                Answering your <em>own</em> question counts too, as long as you did the research to
-                get there. And good <strong>questions</strong> are welcome — they grow the shared
-                knowledge base for everyone.
-              </p>
-            </Accordion.Body>
-          </Accordion.Item>
-        </Accordion>
           </Col>
         </Row>
       </header>

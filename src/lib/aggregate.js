@@ -105,6 +105,34 @@ export function personStats(events, name, { cutoff, today }) {
   };
 }
 
+/** Chart-ready series derived from personStats() output — the shapes a chart wants
+ *  (parallel label/count arrays) rather than the row-per-month shape the CSS bars use.
+ *  Returns a single shared month axis plus two views of the same window:
+ *    - `aggregate`: one total-stars count per month.
+ *    - `faceted`:   one series per knowledge area, each an array of monthly counts
+ *                   aligned to `labels`, so the areas can stack onto one month axis.
+ *  The month×category matrix is built here (one pass over the window's events) instead
+ *  of in personStats, so it's only computed when a chart actually needs it. */
+export function personChartSeries(stats) {
+  const labels = stats.byMonth.map((m) => m.label);
+  const monthKeys = stats.byMonth.map((m) => m.key);
+  const aggregate = stats.byMonth.map((m) => m.count);
+
+  // month → category → count. The "YYYY-MM cat" key is unambiguous: a month key has no space.
+  const counts = new Map();
+  for (const e of stats.recent) {
+    const key = `${e.date.slice(0, 7)} ${e.category || "Uncategorized"}`;
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  // Read out in byCategory's existing order (stars desc) so series colors are stable.
+  const faceted = stats.byCategory.map(({ category }) => ({
+    category,
+    counts: monthKeys.map((mk) => counts.get(`${mk} ${category}`) ?? 0),
+  }));
+
+  return { labels, aggregate, faceted };
+}
+
 export function monthLabel(key) {
   const [y, m] = key.split("-").map(Number);
   if (!y || !m || m < 1 || m > 12) return key;

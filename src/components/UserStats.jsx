@@ -1,13 +1,16 @@
-import { useMemo, useState } from "react";
+import { lazy, Suspense, useMemo, useState } from "react";
 import Card from "react-bootstrap/Card";
 import Form from "react-bootstrap/Form";
 import ButtonGroup from "react-bootstrap/ButtonGroup";
 import Button from "react-bootstrap/Button";
 import ListGroup from "react-bootstrap/ListGroup";
 import { personStats } from "../lib/aggregate.js";
-import { ROSTER, roleFor } from "../lib/roster.js";
+import { ROSTER } from "../lib/roster.js";
 import { AREA_EMOJI } from "./KnowledgeBase.jsx";
-import { SpecialtyBadge } from "./SpecialtyBadge.jsx";
+
+// Lazy so Chart.js (and this chart) land in a separate async chunk, fetched only when
+// a person is selected — keeps the initial page bundle from pulling in the chart lib.
+const DynamicGraphs = lazy(() => import("./DynamicGraphs.jsx"));
 
 const PERIODS = [
   { key: "30d", label: "Last 30 days" },
@@ -54,8 +57,6 @@ export function UserStats({ events, selected, onSelect }) {
   );
 
   const periodLabel = PERIODS.find((p) => p.key === period).label.toLowerCase();
-  const monthMax = stats ? Math.max(1, ...stats.byMonth.map((m) => m.count)) : 1;
-  const catMax = stats ? Math.max(1, ...stats.byCategory.map((c) => c.count)) : 1;
 
   return (
     <Card className="p-3">
@@ -95,7 +96,6 @@ export function UserStats({ events, selected, onSelect }) {
         <>
           <div className="d-flex flex-wrap align-items-baseline gap-2 mb-3">
             <span className="fs-5 fw-bold">{stats.name}</span>
-            <SpecialtyBadge role={stats.role || roleFor(stats.name)} />
             <span>
               <strong>{stats.total}</strong> ⭐ in the {periodLabel}
               {stats.total > 0 && stats.peers > 1 && (
@@ -124,57 +124,18 @@ export function UserStats({ events, selected, onSelect }) {
             )
           ) : (
             <>
-              {/* Growth over time */}
-              <div className="mb-3">
-                <div className="small fw-semibold text-body-secondary mb-1">Stars over time</div>
-                <div className="d-flex align-items-end gap-1" style={{ height: "6rem" }}>
-                  {stats.byMonth.map((m) => (
-                    <div
-                      key={m.key}
-                      className="flex-fill d-flex flex-column align-items-center justify-content-end gap-1"
-                      style={{ minWidth: 0 }}
-                      title={`${m.label}: ${m.count}`}
-                    >
-                      <span className="text-body-secondary" style={{ fontSize: "0.65rem", lineHeight: 1 }}>
-                        {m.count || ""}
-                      </span>
-                      <div
-                        className="stat-bar w-100"
-                        style={{ maxWidth: "28px", height: `${(m.count / monthMax) * 100}%` }}
-                      />
-                      <span
-                        className="text-body-secondary text-truncate w-100 text-center"
-                        style={{ fontSize: "0.65rem", lineHeight: 1 }}
-                      >
-                        {m.label}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* By knowledge area */}
-              <div className="mb-3">
-                <div className="small fw-semibold text-body-secondary mb-1">By knowledge area</div>
-                <div className="d-flex flex-column gap-1">
-                  {stats.byCategory.map((c) => (
-                    <div key={c.category} className="d-flex align-items-center gap-2">
-                      <span className="text-truncate" style={{ width: "10rem", flexShrink: 0 }}>
-                        {AREA_EMOJI[c.category] ?? "✨"} {c.category}
-                      </span>
-                      <div className="stat-bar-track flex-fill" style={{ height: "0.75rem" }}>
-                        <div
-                          className="stat-bar"
-                          style={{ height: "0.75rem", width: `${(c.count / catMax) * 100}%` }}
-                        />
-                      </div>
-                      <span className="fw-semibold text-end" style={{ width: "1.5rem" }}>
-                        {c.count}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              {/* Growth over time + knowledge-area split — interactive line/bar,
+                  toggling between one aggregate series and one series per area.
+                  Lazy-loaded so Chart.js only downloads once a person is picked. */}
+              <Suspense
+                fallback={
+                  <div className="text-body-secondary small mb-3" style={{ height: "12rem" }}>
+                    Loading chart…
+                  </div>
+                }
+              >
+                <DynamicGraphs stats={stats} />
+              </Suspense>
 
               {/* Recent stars */}
               <div>
