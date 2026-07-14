@@ -102,8 +102,7 @@ export function AwardStarModal({ show, onClose, subTopics = [], mode = "email", 
             <p className="mb-0">
               Gold stars celebrate helping a teammate <strong>troubleshoot an issue</strong>, make a{" "}
               <strong>recommendation</strong>, or explain <strong>how or why something works</strong> —
-              sharing knowledge to lift up the team. Fill in the star below and email it in; a quick
-              human check keeps the data clean before it appears on the board.
+              sharing knowledge to lift up the team. Fill in the star below and email it in; it will appear on the board after it has been reviewed.
             </p>
           )}
         </Alert>
