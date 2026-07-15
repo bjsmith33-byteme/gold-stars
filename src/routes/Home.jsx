@@ -64,7 +64,7 @@ export function Home() {
           </Col>
           <Col xs={12} md={6} className="d-flex flex-column gap-3 text-center text-md-start">
         <h1 className="fw-bold mb-0">⭐ Gold Stars</h1>
-        <p className="text-body-secondary mb-0">Let&apos;s learn and grow together</p>
+        <p className="text-body-secondary mb-0">The more you know...</p>
         <Accordion>
           <Accordion.Item eventKey="how">
             <Accordion.Header>How to earn a gold star ⭐</Accordion.Header>
@@ -144,7 +144,7 @@ export function Home() {
       {/* By Knowledge Area */}
       <section className="d-flex flex-column gap-2">
         <h2 className="h4 fw-bold mb-0">🧭 By Knowledge Area</h2>
-        <p className="text-body-secondary small mb-1">Growing our experts across each area — all-time.</p>
+        <p className="text-body-secondary small mb-1">These are our experts in each area. Answer more questions to rise on the board.</p>
         <CategoryBreakdown categories={agg.byCategory} onSelectPerson={jumpToPerson} />
       </section>
 
@@ -152,7 +152,7 @@ export function Home() {
       <section className="d-flex flex-column gap-2">
         <h2 className="h4 fw-bold mb-0">📚 Knowledge Base</h2>
         <p className="text-body-secondary small mb-1">
-          Recent questions &amp; solutions — search or browse the full base before re-asking.
+          Recent questions &amp; solutions — search or browse before re-asking.
         </p>
         <Card body>
           <KnowledgeBasePreview events={events} />

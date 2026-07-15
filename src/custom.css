@@ -23,12 +23,13 @@
 
 /* ---- Palettes ---- */
 [data-bs-theme="light"] {
-  --gs-page: #fefbe4; /* very light pale yellow page */
-  --gs-card: #ffffff; /* white card surface */
+  --gs-page: #ffffff; /* white page */
+  --gs-card: #fefeee; /* very light pale yellow card surface */
   --gs-header: #fcefb6; /* soft light gold: card/table headers, navbar, footer */
   --gs-line: #ead694; /* soft warm gold card border */
   --gs-divider: rgba(130, 100, 30, 0.12); /* faint hairline between names/rows */
   --gs-shadow: 0 1px 5px rgba(120, 80, 20, 0.13);
+  --gs-hover: rgba(150, 110, 25, 0.08);/*clickable rows hovor color*/
 
   --bs-body-bg: var(--gs-page);
   --bs-border-color: var(--gs-line);
@@ -40,6 +41,7 @@
   --gs-line: #574727; /* brown border */
   --gs-divider: rgba(235, 205, 135, 0.13);
   --gs-shadow: 0 1px 6px rgba(0, 0, 0, 0.5);
+  --gs-hover: rgba(150, 110, 25, 0.08);/*clickable rows hovor color*/
 
   --bs-body-bg: var(--gs-page);
   --bs-border-color: var(--gs-line);
@@ -64,10 +66,16 @@
   --bs-list-group-bg: transparent;
   --bs-list-group-border-color: var(--gs-divider);
 }
+.list-group-item {
+  transition: background-color 0.10s ease-in-out;
+}
+.list-group-item:hover {
+  background-color: var(--gs-hover);
+}
 .table {
   --bs-table-bg: transparent;
   --bs-table-striped-bg: transparent;
-  --bs-table-hover-bg: rgba(150, 110, 25, 0.08);
+  --bs-table-hover-bg: var(--gs-hover);
   --bs-table-border-color: var(--gs-divider);
 }
 .table > thead th {
@@ -107,5 +115,5 @@
 /* Light-only: keep form fields crisp white. */
 [data-bs-theme="light"] .form-control,
 [data-bs-theme="light"] .form-select {
-  background-color: #fffdf7;
+  background-color: #ffffff;
 }

@@ -5,7 +5,7 @@ function joinNames(names) {
   return names.slice(0, -1).join(", ") + " & " + names[names.length - 1];
 }
 
-/** Secondary recognition (below the winner/leaderboard): the month's top kudos-giver.
+/** Secondary recognition (below the winner/leaderboard): the month's top stars-giver.
  *  Renders nothing if no one awarded a star that month. A cream card matching the theme. */
 export function SupporterBanner({ supporters, period }) {
   if (supporters.length === 0) return null;
@@ -24,7 +24,7 @@ export function SupporterBanner({ supporters, period }) {
         </div>
         <div className="fw-bold">
           {joinNames(supporters.map((s) => s.name))}
-          <span className="fw-normal text-body-secondary"> — {given} kudos given</span>
+          <span className="fw-normal text-body-secondary"> — {given} stars given</span>
         </div>
       </div>
     </Card>

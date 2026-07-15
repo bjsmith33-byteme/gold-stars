@@ -206,7 +206,7 @@ export function AwardStarModal({ show, onClose, subTopics = [], mode = "email", 
         {stageError && <div className="small text-danger">{stageError}</div>}
         {!valid && (
           <div className="small text-danger">
-            Choose a recipient and add a problem &amp; solution summary to enable this.
+            Choose a recipient and add a problem &amp; solution summary to enable adding a star.
           </div>
         )}
       </Modal.Footer>
