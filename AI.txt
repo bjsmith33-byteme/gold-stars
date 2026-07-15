@@ -1,8 +1,13 @@
 # AI Assistant Notes for this repo
 
-## Design decisions (initial build)
+## Design decisions (initial build prior to tracking)
 Key choices behind the public "Gold Stars" site and why:
 
+- This project started to take form early in the semester with an employer-internal site
+  that I started working on at the same time as coming up with ideas for the web project.
+  This file documents the decisions that were made prior to its creation and then further
+  documents the decisions, additions, deletions, and edits, primarly made with Claude code
+  for all functional changes until early-mid July, where these are tracked more discretely.
 - Plain JavaScript / JSX (no TypeScript) — kept the code easy to read and hand-edit.
 - React-Bootstrap (Bootstrap 5.3) — responsive/mobile-friendly out of the box; its
   Offcanvas powers the side-nav ("sheet" on mobile).
@@ -13,18 +18,16 @@ Key choices behind the public "Gold Stars" site and why:
   is ~20 diverse fake names in src/lib/roster.js. All sample content is dummy data.
 - One unified leaderboard (no team/sub-group split) to keep the public version simple.
 - The "role" field is just a cosmetic specialty badge (Frontend/Backend/Mobile/Full-stack);
-  it doesn't gate anything.
+  it doesn't gate anything yet.
 - Nominations are email-only (a mailto: from the Award form). A static public site has no
   backend and shouldn't expose direct data access, so a human reviews before adding a row.
+  (Previously had allowed direct access to the csv for group members, but this version needs
+  to be public.)
 - Deploy model: build to docs/ with base "/gold-stars/"; GitHub Pages serves from /docs.
   Building does NOT publish — the site changes only when docs/ is committed and pushed
   (intentional, for control over when changes go live). No CI.
 - Light/dark via Bootstrap's data-bs-theme, with a pre-paint script to avoid a flash.
 - Contact/nomination email, the roster, and the CSV rows are PLACEHOLDERS to be replaced.
-
-## Background: design history (from the predecessor)
-This app grew out of an internal team's recognition board. The reasoning that shaped it,
-kept generic here since this repo is public:
 
 Which details to show, and how:
 - One "gold star" per helpful contribution. The board shows the recipient, their
@@ -47,10 +50,11 @@ How data is stored:
 How data is collected:
 - Primary: a web form that composes a row and hands it off by email, so a human reviews
   it before it's added — no direct write access to the data needed.
-- Also explored auto-collecting kudos from team-chat messages (a message with a star and
+- Also explored auto-collecting stars from team-chat messages (a message with a star and
   who it's for). Lesson learned: the chat platform's API returned only ONE reaction per
   message, so reading emoji *reactions* was unworkable — the design switched to parsing
   message *text + mentions*, pulled on a schedule, with a watchdog to alert on failed runs.
+  This feature is not included in the public version.
 
 Future ideas discussed (not all built):
 - Recognize learners, not just answerers — a "Learner of the Month" for the best
@@ -69,7 +73,7 @@ Ideas considered and rejected (and why):
 - For this public version specifically: dropped the team/sub-group ("Friends") split for
   simplicity, and dropped chat + direct-file editing in favor of email-only nominations.
 
-## Task log
+## Task log - About 99% Claude doing the coding under my direction
 Format: YYYY-MM-DD  <task summary>
 
 2026-07-03  Initial build: created this public, generic "Gold Stars" recognition app
@@ -117,3 +121,12 @@ Format: YYYY-MM-DD  <task summary>
             "This Month" section use the same card layout as the past-month cards (winner
             card nested inside, then leaderboard, then supporter), and added left/right edge
             padding to the leaderboard tables so content isn't flush with the card edge.
+
+## Begin tracking manual updates
+
+2026-07-13  String updates (manual)
+2026-07-14  Switched to using chart.js react-chartjs-2 for individual stats. Combined approach 
+            to displaying metrics with toggle between overall counts OR counts by area and 
+            line OR bar charts. Added icons to area line chart for better accessibility. About
+            25% manual work for charts and data, but then had Claude modularize this component 
+            with lazy loading for performance, create unit tests, and incorporate into whole.
