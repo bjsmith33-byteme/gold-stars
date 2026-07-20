@@ -117,3 +117,15 @@
 [data-bs-theme="light"] .form-select {
   background-color: #ffffff;
 }
+.btn-outline-secondary {
+  border-color: #bd7202;
+  color: #bd7202;
+}
+.btn-outline-secondary:hover, .btn-outline-secondary:focus {
+  background-color: #bd7202;
+  border-color: #bd7202;
+  color: #ffffff;
+}
+/* .btn-btn-primary-outline, 
+.btn-btn-primary-outline:hover, .btn-btn-primary-outline:focus {
+} */

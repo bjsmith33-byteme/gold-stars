@@ -39,7 +39,7 @@ export function ReviewChangesPanel({ draft, onEdit, onRemove, onClear }) {
       <Card.Header className="d-flex justify-content-between align-items-center">
         <span className="fw-semibold">✎ Review changes ({draft.length})</span>
         {draft.length > 0 && (
-          <Button variant="outline-danger" size="sm" onClick={clear}>
+          <Button variant="outline-secondary" size="sm" onClick={clear}>
             Cancel / Clear
           </Button>
         )}
