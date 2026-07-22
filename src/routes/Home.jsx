@@ -152,7 +152,7 @@ export function Home() {
       <section className="d-flex flex-column gap-2">
         <h2 className="h4 fw-bold mb-0">📚 Knowledge Base</h2>
         <p className="text-body-secondary small mb-1">
-          Recent questions &amp; solutions — search or browse before re-asking.
+          Recent questions &amp; solutions — search or browse to see if the question has already been asked.
         </p>
         <Card body>
           <KnowledgeBasePreview events={events} />

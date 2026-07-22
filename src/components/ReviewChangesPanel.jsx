@@ -75,6 +75,7 @@ export function ReviewChangesPanel({ draft, onEdit, onRemove, onClear }) {
                   <Button variant="outline-secondary" size="sm" onClick={() => onRemove(r.id)}>
                     Remove
                   </Button>
+                  
                 </div>
               </ListGroup.Item>
             ))}
@@ -87,22 +88,19 @@ export function ReviewChangesPanel({ draft, onEdit, onRemove, onClear }) {
                 <strong>Copy rows</strong> and paste them into the email, or copy from the box below.
               </Alert>
             )}
-            <div className="d-flex flex-wrap gap-2">
-              <Button variant="warning" href={href} onClick={() => setSubmitted(true)}>
-                ✉ Submit changes (email admin)
-              </Button>
-              <Button variant="outline-secondary" onClick={copyRows}>
-                {copied ? "✓ Copied" : "Copy rows"}
-              </Button>
-            </div>
             {submitted && (
               <Alert variant="success" className="mb-0 small">
                 Email opened. Once the admin has committed your changes, click{" "}
                 <strong>Cancel / Clear</strong> so they aren't counted twice on your device.
               </Alert>
             )}
+            <div className="row align-items-start">
+            <div className="col-sm-8 text-start">
             <details>
-              <summary className="small text-body-secondary">Show rows (manual copy)</summary>
+              <summary className="small text-body-secondary">Show rows to manually copy into email</summary>
+              <Button variant="outline-secondary" size="sm" onClick={copyRows}>
+                {copied ? "✓ Copied" : "Copy rows"}
+              </Button>
               <pre
                 className="border rounded bg-body-tertiary p-2 mt-2 mb-0"
                 style={{ whiteSpace: "pre-wrap", wordBreak: "break-all", fontSize: "0.75rem" }}
@@ -110,6 +108,13 @@ export function ReviewChangesPanel({ draft, onEdit, onRemove, onClear }) {
                 {body}
               </pre>
             </details>
+            </div>
+            <div className="col-sm-4 text-end">
+            <Button variant="warning" size="sm" href={href} onClick={() => setSubmitted(true)}>
+                ✉ Submit changes 
+              </Button>
+            </div>
+            </div>
           </Card.Body>
         </>
       )}
