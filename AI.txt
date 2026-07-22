@@ -1,5 +1,7 @@
 # AI Assistant Notes for this repo
 
+## Running AI percentage of code: 98%
+
 ## Design decisions (initial build prior to tracking)
 Key choices behind the public "Gold Stars" site and why:
 
@@ -128,7 +130,9 @@ Format: YYYY-MM-DD  <task summary>
 2026-07-14  Switched to using chart.js react-chartjs-2 for individual stats. Combined approach 
             to displaying metrics with toggle between overall counts OR counts by area and 
             line OR bar charts. Added icons to area line chart for better accessibility. Added 
-            jump links from leaderboard to new graphs. About 25% manual work for charts and 
+            jump links from leaderboard to new graphs. (About 25% manual work for charts and 
             data, but then had Claude modularize this component with lazy loading for 
-            performance, create unit tests, and incorporate into whole.
+            performance, create unit tests, and incorporate into whole) 
 2026-07-15  Styling and string updates. Added hover effect to list group items (manual)
+2026-07-20  Tweaking button appearance (manual)
+2026-07-21  Rearranged Preview section to use grid (manual)

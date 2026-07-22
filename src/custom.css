@@ -117,14 +117,27 @@
 [data-bs-theme="light"] .form-select {
   background-color: #ffffff;
 }
-.btn-outline-secondary {
+[data-bs-theme="light"] .btn-outline-secondary {
   border-color: #bd7202;
   color: #bd7202;
 }
-.btn-outline-secondary:hover, .btn-outline-secondary:focus {
+[data-bs-theme="light"] .btn-outline-secondary:hover, 
+[data-bs-theme="light"] .btn-outline-secondary:focus {
   background-color: #bd7202;
   border-color: #bd7202;
   color: #ffffff;
+}
+
+[data-bs-theme="dark"] .btn-outline-secondary {
+  background-color: #0263c5;
+  /*border-color: #0088FF;*/
+  color: #fefeee;
+}
+[data-bs-theme="dark"] .btn-outline-secondary:hover,
+[data-bs-theme="dark"] .btn-outline-secondary:focus {
+  border-color: #0263c5;
+  background-color: #0088FF;
+  color: #000000;
 }
 /* .btn-btn-primary-outline, 
 .btn-btn-primary-outline:hover, .btn-btn-primary-outline:focus {

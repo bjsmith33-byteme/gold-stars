@@ -46,7 +46,7 @@ export function KnowledgeBasePreview({ events }) {
             placeholder="Search the knowledge base…"
             aria-label="Search the knowledge base"
           />
-          <Button type="submit" variant="outline-warning">
+          <Button type="submit" variant="outline-secondary">
             Search
           </Button>
         </InputGroup>

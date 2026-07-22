@@ -40,7 +40,7 @@ export function ReviewChangesPanel({ draft, onEdit, onRemove, onClear }) {
         <span className="fw-semibold">✎ Review changes ({draft.length})</span>
         {draft.length > 0 && (
           <Button variant="outline-secondary" size="sm" onClick={clear}>
-            Cancel / Clear
+            Remove All
           </Button>
         )}
       </Card.Header>
