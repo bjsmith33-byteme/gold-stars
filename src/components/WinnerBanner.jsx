@@ -1,4 +1,4 @@
-import Alert from "react-bootstrap/Alert";
+import Card from "react-bootstrap/Card";
 
 function joinNames(names) {
   if (names.length <= 1) return names[0] ?? "";
@@ -8,9 +8,9 @@ function joinNames(names) {
 export function WinnerBanner({ winners, period }) {
   if (winners.length === 0) {
     return (
-      <Alert variant="secondary" className="py-2 mb-0">
+      <Card body className="text-body-secondary">
         No stars yet for {period} — the race is wide open.
-      </Alert>
+      </Card>
     );
   }
 
@@ -18,7 +18,7 @@ export function WinnerBanner({ winners, period }) {
   const stars = winners[0].stars;
 
   return (
-    <Alert variant="warning" className="d-flex align-items-center gap-3 mb-0">
+    <Card body className="winner-card d-flex flex-row align-items-center gap-3">
       <span style={{ fontSize: "1.75rem" }} aria-hidden="true">
         🏆
       </span>
@@ -31,6 +31,6 @@ export function WinnerBanner({ winners, period }) {
           <span className="fw-semibold"> — {stars} ⭐</span>
         </div>
       </div>
-    </Alert>
+    </Card>
   );
 }

@@ -1,6 +1,5 @@
 // Constant contact footer shown on every page (rendered by Layout).
-// PLACEHOLDERS: replace the email and links below with your own.
-const CONTACT_EMAIL = "you@example.com";
+const CONTACT_EMAIL = "bjsmith33@wisc.edu";
 
 const FEEDBACK_HREF =
   "mailto:" +
@@ -14,9 +13,9 @@ const FEEDBACK_HREF =
 
 export function Footer() {
   return (
-    <footer className="border-top mt-5 py-4 text-center small text-body-secondary">
+    <footer className="app-footer border-top mt-5 py-4 text-center small">
       <p className="mb-2">
-        <a href={FEEDBACK_HREF} className="btn btn-sm btn-outline-secondary">
+        <a href={FEEDBACK_HREF} className="btn btn-sm btn-warning">
           💬 Send feedback
         </a>
       </p>

@@ -1,6 +1,5 @@
-/** The cosmetic "specialty" badge (Frontend/Backend/Mobile/Full-stack). Colors come
- *  from custom.css (.badge-<specialty>); an unknown/blank specialty shows a muted dash. */
+/** The cosmetic "specialty" (Frontend/Backend/Mobile/Full-stack). De-emphasized as plain
+ *  muted text rather than a colored badge — it's supplementary, not a headline. */
 export function SpecialtyBadge({ role }) {
-  if (!role) return <span className="badge text-bg-secondary">—</span>;
-  return <span className={`badge badge-specialty badge-${role}`}>{role}</span>;
+  return <span className="text-body-secondary small">{role || "—"}</span>;
 }

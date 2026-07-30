@@ -1,21 +1,33 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Outlet, Link, NavLink, useLocation } from "react-router-dom";
 import Navbar from "react-bootstrap/Navbar";
 import Nav from "react-bootstrap/Nav";
 import Offcanvas from "react-bootstrap/Offcanvas";
 import Container from "react-bootstrap/Container";
 import { aggregate, parseCsv } from "../lib/aggregate.js";
+import {
+  loadOverlay,
+  saveOverlay,
+  loadPreviewMode,
+  savePreviewMode,
+  validateDraftRow,
+} from "../lib/overlay.js";
 import { ThemeToggle } from "../components/ThemeToggle.jsx";
+import { PreviewToggle } from "../components/PreviewToggle.jsx";
+import { DraftBanner } from "../components/DraftBanner.jsx";
 import { Footer } from "../components/Footer.jsx";
 
-/** App shell: an offcanvas ("sheet") side-nav, the theme toggle, the routed page, and a
- *  constant footer. Owns the single CSV fetch and shares the parsed data with pages via
- *  Outlet context, so pages don't each re-fetch. */
+/** App shell: an offcanvas ("sheet") side-nav, theme + preview toggles, the routed page,
+ *  and a constant footer. Owns the single CSV fetch AND the local "draft" overlay, merging
+ *  them (only while Preview mode is on) before aggregating, and shares everything via
+ *  Outlet context so pages don't re-fetch or re-merge. */
 export function Layout() {
-  const [events, setEvents] = useState([]);
-  const [agg, setAgg] = useState(null);
+  const [csvEvents, setCsvEvents] = useState([]);
+  const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(null);
   const [expanded, setExpanded] = useState(false);
+  const [draft, setDraft] = useState(() => loadOverlay().rows);
+  const [previewMode, setPreviewModeState] = useState(loadPreviewMode);
   const location = useLocation();
 
   useEffect(() => {
@@ -26,9 +38,8 @@ export function Layout() {
         return r.text();
       })
       .then((text) => {
-        const evs = parseCsv(text);
-        setEvents(evs);
-        setAgg(aggregate(evs));
+        setCsvEvents(parseCsv(text));
+        setLoaded(true);
       })
       .catch((e) => setError(e instanceof Error ? e.message : String(e)));
   }, []);
@@ -37,6 +48,53 @@ export function Layout() {
   useEffect(() => {
     window.scrollTo({ top: 0 });
   }, [location.pathname]);
+
+  // Merge the local draft on top of the published CSV ONLY while previewing; otherwise the
+  // board is published-only (the draft stays in localStorage, just hidden). aggregate()
+  // sorts by date, so staged rows land in the right month automatically.
+  const events = useMemo(
+    () => (previewMode ? [...csvEvents, ...draft] : csvEvents),
+    [csvEvents, draft, previewMode],
+  );
+  const agg = useMemo(() => (loaded ? aggregate(events) : null), [loaded, events]);
+
+  const setPreviewMode = (next) => {
+    setPreviewModeState(next);
+    savePreviewMode(next);
+  };
+
+  // Mutators persist immediately. addDraft/updateDraft return null on success or a reason
+  // string on validation failure (the Award modal surfaces it inline).
+  const addDraft = (rowObject) => {
+    const res = validateDraftRow(rowObject);
+    if (!res.ok) return res.reason;
+    const next = [...draft, res.row];
+    setDraft(next);
+    saveOverlay(next);
+    return null;
+  };
+
+  const updateDraft = (id, patch) => {
+    const current = draft.find((r) => r.id === id);
+    if (!current) return "That staged entry no longer exists.";
+    const res = validateDraftRow({ ...current, ...patch, id });
+    if (!res.ok) return res.reason;
+    const next = draft.map((r) => (r.id === id ? res.row : r));
+    setDraft(next);
+    saveOverlay(next);
+    return null;
+  };
+
+  const removeDraft = (id) => {
+    const next = draft.filter((r) => r.id !== id);
+    setDraft(next);
+    saveOverlay(next);
+  };
+
+  const clearDraft = () => {
+    setDraft([]);
+    saveOverlay([]);
+  };
 
   const closeNav = () => setExpanded(false);
 
@@ -55,6 +113,9 @@ export function Layout() {
             ⭐ Gold Stars
           </Navbar.Brand>
           <div className="d-flex align-items-center gap-2">
+            {location.pathname !== "/about" && (
+              <PreviewToggle on={previewMode} onChange={setPreviewMode} count={draft.length} />
+            )}
             <ThemeToggle />
             <Navbar.Toggle aria-controls="main-nav" />
           </div>
@@ -88,8 +149,23 @@ export function Layout() {
         </Container>
       </Navbar>
 
+      {previewMode && <DraftBanner count={draft.length} />}
+
       <Container className="py-4" style={{ maxWidth: "56rem" }}>
-        <Outlet context={{ events, agg, error }} />
+        <Outlet
+          context={{
+            events,
+            agg,
+            error,
+            previewMode,
+            setPreviewMode,
+            draft,
+            addDraft,
+            updateDraft,
+            removeDraft,
+            clearDraft,
+          }}
+        />
       </Container>
 
       <Footer />

@@ -1,14 +1,13 @@
 import Card from "react-bootstrap/Card";
 
-// PLACEHOLDER contact — replace with your own.
-const CONTACT_EMAIL = "you@example.com";
+const CONTACT_EMAIL = "bjsmith33@wisc.edu";
 
 export function About() {
   return (
     <div className="d-flex flex-column gap-3" style={{ maxWidth: "44rem" }}>
       <h1 className="fw-bold mb-0">About Gold Stars</h1>
       <p className="text-body-secondary mb-0">
-        A lightweight recognition board for a team of developers.
+        A lightweight team recognition board.
       </p>
 
       <Card body>
