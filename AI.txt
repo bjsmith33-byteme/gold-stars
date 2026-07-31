@@ -1,6 +1,5 @@
 # AI Assistant Notes for this repo
-
-## Running AI percentage of code: 98%
+## Approximate percentage code by AI: 98%
 
 ## Design decisions (initial build prior to tracking)
 Key choices behind the public "Gold Stars" site and why:
