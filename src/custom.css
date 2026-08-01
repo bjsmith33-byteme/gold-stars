@@ -23,7 +23,7 @@
 
 /* ---- Palettes ---- */
 [data-bs-theme="light"] {
-  --gs-page: #fefdfd; /* white page */
+  --gs-page: #fefdfd; /* nearly white page */
   --gs-card: #fefeee; /* very light pale yellow card surface */
   --gs-header: #fcefb6; /* soft light gold: card/table headers, navbar, footer */
   --gs-line: #ead694; /* soft warm gold card border */
