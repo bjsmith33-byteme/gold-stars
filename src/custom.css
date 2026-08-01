@@ -23,7 +23,7 @@
 
 /* ---- Palettes ---- */
 [data-bs-theme="light"] {
-  --gs-page: #ffffff; /* white page */
+  --gs-page: #fefdfd; /* white page */
   --gs-card: #fefeee; /* very light pale yellow card surface */
   --gs-header: #fcefb6; /* soft light gold: card/table headers, navbar, footer */
   --gs-line: #ead694; /* soft warm gold card border */
@@ -121,7 +121,12 @@
   border-color: #bd7202;
   color: #bd7202;
 }
-[data-bs-theme="light"] .btn-outline-secondary:hover, 
+[data-bs-theme="light"] .btn-outline-secondary-selected {
+  background-color: #bd7202;
+  border-color: #bd7202;
+  color: #ffffff;
+}
+[data-bs-theme="light"] .btn-outline-secondary:hover,
 [data-bs-theme="light"] .btn-outline-secondary:focus {
   background-color: #bd7202;
   border-color: #bd7202;
@@ -129,16 +134,18 @@
 }
 
 [data-bs-theme="dark"] .btn-outline-secondary {
-  background-color: #0263c5;
-  /*border-color: #0088FF;*/
-  color: #fefeee;
+   border-color: #00D1FF ;
+   color: #00D1FF  ;
+   background-color: #0e0a05;
 }
 [data-bs-theme="dark"] .btn-outline-secondary:hover,
 [data-bs-theme="dark"] .btn-outline-secondary:focus {
   border-color: #0263c5;
-  background-color: #0088FF;
+  background-color: #56b4e9;
   color: #000000;
 }
-/* .btn-btn-primary-outline, 
-.btn-btn-primary-outline:hover, .btn-btn-primary-outline:focus {
-} */
+[data-bs-theme="dark"] .btn-outline-secondary-selected {
+  border-color: #0088ff;
+  background-color: #56b4e9;
+  color: #000000;
+}

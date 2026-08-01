@@ -1,6 +1,5 @@
 # AI Assistant Notes for this repo
-
-## Running AI percentage of code: 98%
+## Approximate percentage code by AI: 98%
 
 ## Design decisions (initial build prior to tracking)
 Key choices behind the public "Gold Stars" site and why:
@@ -136,3 +135,4 @@ Format: YYYY-MM-DD  <task summary>
 2026-07-15  Styling and string updates. Added hover effect to list group items (manual)
 2026-07-20  Tweaking button appearance (manual)
 2026-07-21  Rearranged Preview section to use grid (manual)
+2026-07-31  Theme updates (manual)

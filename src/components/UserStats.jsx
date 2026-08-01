@@ -79,7 +79,7 @@ export function UserStats({ events, selected, onSelect }) {
           {PERIODS.map((p) => (
             <Button
               key={p.key}
-              variant={period === p.key ? "warning" : "outline-warning"}
+              variant={period === p.key ? "outline-secondary-selected" : "outline-secondary"}
               onClick={() => setPeriod(p.key)}
             >
               {p.label}
@@ -97,7 +97,7 @@ export function UserStats({ events, selected, onSelect }) {
           <div className="d-flex flex-wrap align-items-baseline gap-2 mb-3">
             <span className="fs-5 fw-bold">{stats.name}</span>
             <span>
-              <strong>{stats.total}</strong> ⭐ in the {periodLabel}
+              <strong>{stats.total}</strong> ⭐ · {periodLabel}
               {stats.total > 0 && stats.peers > 1 && (
                 <span className="text-body-secondary">
                   {" "}
