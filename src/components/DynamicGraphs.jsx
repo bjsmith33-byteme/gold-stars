@@ -150,7 +150,7 @@ export function DynamicGraphs({ stats }) {
               Total
             </Button>
             <Button
-              variant={faceted ? "outline-secondary-selected" : "outline-warning"}
+              variant={faceted ? "outline-secondary-selected" : "outline-secondary"}
               onClick={() => setFaceted(true)}
             >
               By area

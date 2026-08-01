@@ -31,3 +31,4 @@ date,recipient,role,category,note,source,awarded_by,sub_topic
 2026-07-03,Fatima Al-Sayed,Frontend,React,"State updates are asynchronous and batched — the variable won't change on the next line. Read the new value on the next render, or use the functional updater setX(prev => ...).",Manual,Mei Lin Chen,state
 2026-07-03,Yuki Sato,Frontend,React,"Fetching in useEffect? Guard the response race: set an ignore flag (or use AbortController) in the cleanup so a slow earlier request can't overwrite newer data.",Manual,Zoe Anderson,effects
 2026-07-02,Aisha Okafor,Frontend,React,"Keep hooks unconditional: always call them at the top level, never inside if statements or loops, so their order stays stable across every render.",Manual,Priya Nair,hooks
+2026-08-01,Aisha Okafor,Frontend,React,"Updates not appearing on live site because I forgot to npm run build",Email,,deploy
