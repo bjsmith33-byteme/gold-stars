@@ -130,13 +130,13 @@ export function DynamicGraphs({ stats }) {
         <div className="d-flex gap-2">
           <ButtonGroup size="sm">
             <Button
-              variant={chartType === "bar" ? "warning" : "outline-warning"}
+              variant={chartType === "bar" ? "outline-secondary-selected" : "outline-secondary"}
               onClick={() => setChartType("bar")}
             >
               Bar
             </Button>
             <Button
-              variant={chartType === "line" ? "warning" : "outline-warning"}
+              variant={chartType === "line" ? "outline-secondary-selected" : "outline-secondary"}
               onClick={() => setChartType("line")}
             >
               Line
@@ -144,13 +144,13 @@ export function DynamicGraphs({ stats }) {
           </ButtonGroup>
           <ButtonGroup size="sm">
             <Button
-              variant={!faceted ? "warning" : "outline-warning"}
+              variant={!faceted ? "outline-secondary-selected" : "outline-secondary"}
               onClick={() => setFaceted(false)}
             >
               Total
             </Button>
             <Button
-              variant={faceted ? "warning" : "outline-warning"}
+              variant={faceted ? "outline-secondary-selected" : "outline-warning"}
               onClick={() => setFaceted(true)}
             >
               By area
