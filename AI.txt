@@ -10,6 +10,10 @@ Key choices behind the public "Gold Stars" site and why:
   documents the decisions, additions, deletions, and edits, primarly made with Claude code
   for all functional changes until early-mid July, where these are tracked more discretely.
 - Plain JavaScript / JSX (no TypeScript) — kept the code easy to read and hand-edit.
+  SUPERSEDED 2026-08-01: converted to TypeScript so this repo and the private predecessor
+  run the SAME source files, differing only in src/config/. Readability held up: the
+  types mostly annotate the CSV row shape and the config contract, which is where the
+  hand-editing questions actually come up.
 - React-Bootstrap (Bootstrap 5.3) — responsive/mobile-friendly out of the box; its
   Offcanvas powers the side-nav ("sheet" on mobile).
 - React Router in declarative mode with HashRouter — GitHub Pages has no single-page-app
@@ -18,6 +22,8 @@ Key choices behind the public "Gold Stars" site and why:
   backend or database. Knowledge areas are React / JavaScript / CSS / SwiftUI; the roster
   is ~20 diverse fake names in src/lib/roster.js. All sample content is dummy data.
 - One unified leaderboard (no team/sub-group split) to keep the public version simple.
+  As of 2026-08-01 this is a CONFIG value (roles.podRoles: []) rather than missing code —
+  a team that wants the split turns it on without touching a component.
 - The "role" field is just a cosmetic specialty badge (Frontend/Backend/Mobile/Full-stack);
   it doesn't gate anything yet.
 - Nominations are email-only (a mailto: from the Award form). A static public site has no
@@ -55,7 +61,10 @@ How data is collected:
   who it's for). Lesson learned: the chat platform's API returned only ONE reaction per
   message, so reading emoji *reactions* was unworkable — the design switched to parsing
   message *text + mentions*, pulled on a schedule, with a watchdog to alert on failed runs.
-  This feature is not included in the public version.
+  UPDATED 2026-08-01: the message *parser* is now included here (src/lib/teams.ts) and
+  tested, but ships SWITCHED OFF behind features.chatComposer with a placeholder chat
+  block — no real chat ids, and the scheduled fetcher/committer is not included. It's here
+  so the template is complete for a team that wants to wire up their own chat platform.
 
 Future ideas discussed (not all built):
 - Recognize learners, not just answerers — a "Learner of the Month" for the best
@@ -136,3 +145,23 @@ Format: YYYY-MM-DD  <task summary>
 2026-07-20  Tweaking button appearance (manual)
 2026-07-21  Rearranged Preview section to use grid (manual)
 2026-07-31  Theme updates (manual)
+2026-08-01  Modularized the app behind a config seam and converted it to TypeScript
+            (Claude, ~100% AI under direction; my part was the decisions below).
+            The private predecessor had meanwhile absorbed this repo's UI work — router,
+            Preview mode, Chart.js graphs, the Bootstrap look — so it was a strict superset
+            of this one. Rather than convert 30 files by hand, I had Claude copy that tree
+            over and push every team-specific value into a new src/config/: team.config.ts
+            (branding, contacts, roles, areas, sources, feature switches, deploy paths),
+            roster.ts, copy.tsx, and types.ts as the documented contract. This repo's
+            identity now lives entirely in those four files.
+            Decisions I made along the way: keep My Stats chart-only here (the private app
+            shows CSS area bars too — that became a features.areaBars flag rather than a
+            code fork); include the chat parser but switched off with placeholder ids;
+            and treat "one unified board" as config (roles.podRoles: []) instead of
+            absent code. Two behavior changes came along with the shared code: Supporter
+            of the Month now counts every star in a month, and the sub-topic placeholder
+            comes from copy.tsx.
+            Tests were rewritten rather than copied — they assert against the LIVE config,
+            so e.g. "source: Teams is rejected" is now a true statement about THIS config.
+            39 tests, tsc clean, walked the whole app in a browser. docs/ deliberately NOT
+            rebuilt, so nothing published yet.

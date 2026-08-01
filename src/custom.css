@@ -23,13 +23,13 @@
 
 /* ---- Palettes ---- */
 [data-bs-theme="light"] {
-  --gs-page: #fefdfd; /* nearly white page */
+  --gs-page: #fefdfd; /* white page */
   --gs-card: #fefeee; /* very light pale yellow card surface */
   --gs-header: #fcefb6; /* soft light gold: card/table headers, navbar, footer */
   --gs-line: #ead694; /* soft warm gold card border */
   --gs-divider: rgba(130, 100, 30, 0.12); /* faint hairline between names/rows */
   --gs-shadow: 0 1px 5px rgba(120, 80, 20, 0.13);
-  --gs-hover: rgba(150, 110, 25, 0.08);/*clickable rows hovor color*/
+  --gs-hover: rgba(150, 110, 25, 0.08); /* clickable row hover */
 
   --bs-body-bg: var(--gs-page);
   --bs-border-color: var(--gs-line);
@@ -41,7 +41,7 @@
   --gs-line: #574727; /* brown border */
   --gs-divider: rgba(235, 205, 135, 0.13);
   --gs-shadow: 0 1px 6px rgba(0, 0, 0, 0.5);
-  --gs-hover: rgba(150, 110, 25, 0.08);/*clickable rows hovor color*/
+  --gs-hover: rgba(150, 110, 25, 0.08); /* clickable row hover */
 
   --bs-body-bg: var(--gs-page);
   --bs-border-color: var(--gs-line);
@@ -67,7 +67,7 @@
   --bs-list-group-border-color: var(--gs-divider);
 }
 .list-group-item {
-  transition: background-color 0.10s ease-in-out;
+  transition: background-color 0.1s ease-in-out;
 }
 .list-group-item:hover {
   background-color: var(--gs-hover);
