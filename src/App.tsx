@@ -1,7 +1,8 @@
 import { Routes, Route, Navigate } from "react-router-dom";
-import { Layout } from "./routes/Layout";
+import { Layout, FRIENDS_PAGE_ENABLED } from "./routes/Layout";
 import { Home } from "./routes/Home";
 import { KnowledgeBasePage } from "./routes/KnowledgeBasePage";
+import { FriendsPage } from "./routes/FriendsPage";
 import { About } from "./routes/About";
 import TEAM from "./config/team.config";
 
@@ -16,6 +17,7 @@ export default function App() {
       <Route element={<Layout />}>
         <Route index element={<Home />} />
         {TEAM.features.knowledgeBase && <Route path="kb" element={<KnowledgeBasePage />} />}
+        {FRIENDS_PAGE_ENABLED && <Route path="friends" element={<FriendsPage />} />}
         <Route path="about" element={<About />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>

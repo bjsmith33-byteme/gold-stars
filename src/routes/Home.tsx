@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, Link } from "react-router-dom";
 import Accordion from "react-bootstrap/Accordion";
 import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
@@ -19,7 +19,7 @@ import { KnowledgeBasePreview } from "../components/KnowledgeBasePreview";
 import { AwardStarModal } from "../components/AwardStarModal";
 import { ReviewChangesPanel } from "../components/ReviewChangesPanel";
 import StarChartPosterboard from "../components/StarChartPosterboard";
-import { useBoard } from "./Layout";
+import { useBoard, FRIENDS_PAGE_ENABLED, HAS_ALUMNI } from "./Layout";
 import { HOW_TO_EARN } from "../config/copy";
 import TEAM from "../config/team.config";
 
@@ -34,10 +34,13 @@ export function Home() {
   const [searchParams] = useSearchParams();
   const awardParam = searchParams.has("award");
   const chatParam = searchParams.get("chat") ?? undefined;
+  // "#/?person=Aisha+Okafor" preselects My Stats and scrolls to it — how the Friends page
+  // hands a name back to the board, since My Stats only lives here.
+  const personParam = searchParams.get("person") ?? "";
 
   const [showAward, setShowAward] = useState(awardParam);
   const [awardChat, setAwardChat] = useState<string | undefined>(chatParam);
-  const [person, setPerson] = useState("");
+  const [person, setPerson] = useState(personParam);
   const [editRow, setEditRow] = useState<DraftRow | null>(null);
 
   // Re-open when the query changes (Back/Forward, or following another ?award= link while
@@ -54,6 +57,22 @@ export function Home() {
     setPerson(name);
     document.getElementById("my-stats")?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
+
+  // Arriving from /friends with ?person=. Deferred one tick because Layout's scroll-to-top
+  // effect is a PARENT effect, so it runs after this one on mount and would otherwise undo
+  // the scroll.
+  useEffect(() => {
+    if (!personParam) return;
+    setPerson(personParam);
+    const t = setTimeout(
+      () =>
+        document
+          .getElementById("my-stats")
+          ?.scrollIntoView({ behavior: "smooth", block: "start" }),
+      0,
+    );
+    return () => clearTimeout(t);
+  }, [personParam]);
 
   if (error) return <Alert variant="danger">⚠ {error}</Alert>;
   if (!agg) {
@@ -209,21 +228,18 @@ export function Home() {
         )}
       </section>
 
-      {/* Self-hides when roles.podRoles is empty (nobody is off-pod), when the feature is
-          switched off, or simply when no friend has a star yet. */}
-      {TEAM.features.friendsOfThePod && agg.friendsAllTime.length > 0 && (
-        <section className="d-flex flex-column gap-2">
-          <h2 className="h4 fw-bold mb-0">
-            🤝 {TEAM.roles.friendsLabel ?? "Friends of the Team"}
-          </h2>
-          <p className="text-body-secondary small mb-1">
-            Folks outside the {TEAM.branding.tagline} who jumped in to help — recognized here,
-            separate from the main leaderboard.
-          </p>
-          <div className="border rounded overflow-hidden pop-surface">
-            <Leaderboard tallies={agg.friendsAllTime} onSelectPerson={jumpToPerson} />
-          </div>
-        </section>
+      {/* The Friends and Alumni boards used to sit here. They live on /friends now — this
+          page is for who's currently competing. Absent entirely in this template, since
+          both switches are off by default. */}
+      {FRIENDS_PAGE_ENABLED && (
+        <p className="text-body-secondary small mb-0">
+          Looking for someone off the leaderboard? See{" "}
+          <Link to="/friends">
+            {TEAM.roles.friendsLabel ?? "Friends"}
+            {HAS_ALUMNI && ` & ${TEAM.roles.alumniLabel ?? "alumni"}`}
+          </Link>
+          .
+        </p>
       )}
 
       <AwardStarModal

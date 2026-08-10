@@ -19,6 +19,17 @@ import { DraftBanner } from "../components/DraftBanner";
 import { Footer } from "../components/Footer";
 import TEAM from "../config/team.config";
 
+/** Is the off-leaderboard board switched on, and are there former members? The /friends
+ *  page shows one section per flag; FRIENDS_PAGE_ENABLED gates the page and its nav link.
+ *  These live here, with the nav, rather than in FriendsPage — the page imports useBoard
+ *  from this module, so pointing the flag the other way would be an import cycle.
+ *
+ *  NOTE for this template: both are off by default (friendsOfThePod: false, alumni: []),
+ *  so /friends does not exist at all. See SETUP.md to switch it on. */
+export const FRIENDS_ENABLED = TEAM.features.friendsOfThePod;
+export const HAS_ALUMNI = (TEAM.roles.alumni?.length ?? 0) > 0;
+export const FRIENDS_PAGE_ENABLED = FRIENDS_ENABLED || HAS_ALUMNI;
+
 /** Everything Layout shares with the routed pages via Outlet context. */
 export interface BoardContext {
   events: StarEvent[];
@@ -171,6 +182,11 @@ export function Layout() {
                 {TEAM.features.knowledgeBase && (
                   <Nav.Link as={NavLink} to="/kb" onClick={closeNav}>
                     Knowledge Base
+                  </Nav.Link>
+                )}
+                {FRIENDS_PAGE_ENABLED && (
+                  <Nav.Link as={NavLink} to="/friends" onClick={closeNav}>
+                    Friends
                   </Nav.Link>
                 )}
                 <Nav.Link as={NavLink} to="/about" onClick={closeNav}>
