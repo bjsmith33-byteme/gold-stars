@@ -65,6 +65,18 @@ export interface TeamConfig {
     podRoles: string[];
     /** Heading for the non-pod board. Only used when `podRoles` is non-empty. */
     friendsLabel?: string;
+    /** Former members, by full name. Listed HERE rather than in roster.ts so the roster
+     *  can stay a plain list of who's on the team today (and, on teams that generate it
+     *  from a staff directory, so it survives regeneration). Their past stars stay in the
+     *  months they were earned, but they drop off the cumulative leaderboard and out of
+     *  the Award-a-Star picker. Matching is case-insensitive and trims spaces.
+     *  Empty = no alumni board. */
+    alumni?: string[];
+    /** Badge text for an alum. Deliberately NOT one of `values` — a role you can't be
+     *  awarded in. Defaults to "Alum". */
+    alumniRole?: string;
+    /** Heading for the alumni board. Only used when `alumni` is non-empty. */
+    alumniLabel?: string;
   };
 
   /** Knowledge areas, in the order they should appear on the board. */

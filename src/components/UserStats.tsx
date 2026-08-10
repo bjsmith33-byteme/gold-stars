@@ -4,7 +4,7 @@ import Form from "react-bootstrap/Form";
 import ButtonGroup from "react-bootstrap/ButtonGroup";
 import Button from "react-bootstrap/Button";
 import ListGroup from "react-bootstrap/ListGroup";
-import { AREA_EMOJI, personStats, type StarEvent } from "../lib/aggregate";
+import { AREA_EMOJI, displayRole, personStats, type StarEvent } from "../lib/aggregate";
 import { ROSTER, roleFor } from "../config/roster";
 import { SpecialtyBadge } from "./SpecialtyBadge";
 import TEAM from "../config/team.config";
@@ -110,8 +110,8 @@ export function UserStats({
           {/* Headline */}
           <div className="d-flex flex-wrap align-items-baseline gap-2 mb-3">
             <span className="fs-5 fw-bold">{stats.name}</span>
-            {/* roster role if they've no stars yet */}
-            <SpecialtyBadge role={stats.role || roleFor(stats.name)} />
+            {/* roster role if they've no stars yet; ALUM_ROLE for a former member */}
+            <SpecialtyBadge role={displayRole(stats.name, stats.role || roleFor(stats.name))} />
             <span>
               <strong>{stats.total}</strong> ⭐ · {periodLabel}
               {stats.total > 0 && stats.peers > 1 && (

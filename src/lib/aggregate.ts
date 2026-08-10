@@ -45,6 +45,26 @@ export function isPodRole(role: string): boolean {
   return TEAM.roles.podRoles.includes(role.trim());
 }
 
+/** Badge text for a former member. */
+export const ALUM_ROLE: string = TEAM.roles.alumniRole ?? "Alum";
+
+const ALUMNI = new Set((TEAM.roles.alumni ?? []).map((n) => n.trim().toLowerCase()));
+
+/** Has this person left the team? Alumni are matched by NAME, not by role, because their
+ *  historical CSV rows still carry the role they held at the time (that's deliberate — it
+ *  keeps past months accurate). Name matching is what lets one person be counted in the
+ *  months they earned stars and excluded from the cumulative board. */
+export function isAlum(name: string): boolean {
+  return ALUMNI.has(name.trim().toLowerCase());
+}
+
+/** The role to DISPLAY for someone — `ALUM_ROLE` for a former member, otherwise the role
+ *  passed in (their latest event's role, or a roster lookup). Alumni win so a badge never
+ *  shows the role they held before leaving. */
+export function displayRole(name: string, role: string): string {
+  return isAlum(name) ? ALUM_ROLE : role;
+}
+
 /** Knowledge areas, in board order. */
 export const CATEGORIES: string[] = TEAM.categories.map((c) => c.name);
 
@@ -97,9 +117,10 @@ export interface CategoryTally {
 }
 
 export interface Aggregated {
-  allTime: Tally[]; // isPodRole earners only — the competitive leaderboard
-  allTimeTotal: number; // pod stars only
+  allTime: Tally[]; // current isPodRole earners — the competitive leaderboard (no alumni)
+  allTimeTotal: number; // current pod stars only (no alumni)
   friendsAllTime: Tally[]; // non-pod star-earners ("friends"); empty when podRoles is []
+  alumniAllTime: Tally[]; // former members' stars; empty when roles.alumni is []
   byCategory: CategoryTally[]; // all-time, per knowledge area (areas with >=1 star); includes everyone
   months: MonthData[]; // sorted by key desc (newest first); pod-only competition
 }
@@ -334,8 +355,15 @@ export function aggregate(events: StarEvent[]): Aggregated {
   // is pod and that list is empty). Knowledge views (By Knowledge Area, the
   // Knowledge Base, My Stats) intentionally include everyone — broadening shared
   // knowledge is the whole point of watching the cross-team chats.
+  //
+  // Alumni are a third bucket, split off by NAME. `podEvents` still includes their old
+  // stars so PAST MONTHS are unchanged — someone who won May stays May's winner after
+  // they leave. The cumulative board reads `currentPodEvents` instead, which drops them.
+  const alumniEvents = sorted.filter((e) => isAlum(e.recipient));
   const podEvents = sorted.filter((e) => isPodRole(e.role));
-  const friendEvents = sorted.filter((e) => !isPodRole(e.role));
+  const currentPodEvents = podEvents.filter((e) => !isAlum(e.recipient));
+  // An alum is never also a "friend", whatever role their rows carry.
+  const friendEvents = sorted.filter((e) => !isPodRole(e.role) && !isAlum(e.recipient));
 
   const byMonth = new Map<string, StarEvent[]>();
   for (const e of podEvents) {
@@ -369,9 +397,11 @@ export function aggregate(events: StarEvent[]): Aggregated {
     .sort((a, b) => b.key.localeCompare(a.key));
 
   return {
-    allTime: tallyEvents(podEvents),
-    allTimeTotal: podEvents.length,
+    allTime: tallyEvents(currentPodEvents),
+    allTimeTotal: currentPodEvents.length,
     friendsAllTime: tallyEvents(friendEvents),
+    // Badge the alumni board with ALUM_ROLE rather than the role their last star carried.
+    alumniAllTime: tallyEvents(alumniEvents).map((t) => ({ ...t, role: ALUM_ROLE })),
     byCategory: tallyByCategory(sorted),
     months,
   };

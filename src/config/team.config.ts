@@ -39,6 +39,14 @@ const config: TeamConfig = {
     // appears. Fill this in only if you want a subset of roles on the main leaderboard
     // with everyone else tracked separately.
     podRoles: [],
+    // Former members, by full name. Their stars stay in the months they earned them, but
+    // they come off the cumulative leaderboard, drop out of the Award-a-Star picker, and
+    // move to their own board on /friends. EMPTY = no alumni, and the page's alumni
+    // section doesn't render. To use it:
+    //   alumni: ["Grace Mueller", "Omar Haddad"],
+    // `alumniRole` ("Alum") and `alumniLabel` ("Alumni") are the badge and heading text;
+    // both are optional and defaulted, so they're left out here.
+    alumni: [],
   },
 
   // Order here is the order areas appear on the board, and it breaks ties when two
@@ -88,7 +96,10 @@ const config: TeamConfig = {
     // Off: the chart's By-area facet already covers this ground.
     areaBars: false,
     knowledgeBase: true,
-    friendsOfThePod: false, // ignored anyway while roles.podRoles is empty
+    // The Friends board on /friends. Needs a non-empty roles.podRoles to be useful: with
+    // podRoles empty everyone counts as on-team, so the board would always be empty.
+    // Together with roles.alumni this also decides whether /friends exists at all.
+    friendsOfThePod: false,
     chatComposer: false, // no real chat wired up; nominations are email-only
   },
 

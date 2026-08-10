@@ -36,6 +36,10 @@ const config: TeamConfig = {
     // appears. Fill this in only if you want a subset of roles on the main leaderboard
     // with everyone else tracked separately.
     podRoles: [],
+    // Former members, by full name. Their past stars stay in the months they were earned,
+    // but they drop off the cumulative leaderboard and can't be nominated.
+    // EMPTY = no alumni board appears.
+    alumni: [],
   },
 
   categories: [

@@ -1,6 +1,14 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { aggregate, isPodRole, type StarEvent } from "./aggregate.ts";
+import {
+  aggregate,
+  ALUM_ROLE,
+  displayRole,
+  isAlum,
+  isPodRole,
+  ROLES,
+  type StarEvent,
+} from "./aggregate.ts";
 
 // These tests run against the LIVE src/config/team.config.ts, so they double as a
 // check that the config is coherent. This template configures `roles.podRoles: []`
@@ -91,4 +99,43 @@ test("monthly competition and By Knowledge Area both include everyone", () => {
 
   const react = agg.byCategory.find((c) => c.category === "React")!;
   assert.equal(react.total, 2, "knowledge area counts every star");
+});
+
+// ── Alumni ───────────────────────────────────────────────────────────────────
+// This template ships `roles.alumni: []`, so the feature is dormant: nobody is an
+// alum, the alumni board is empty, and no one is held out of the cumulative board.
+// These assert that dormant state — the same way the podRoles cases above do.
+// Populate roles.alumni and the behavior asserted in the last test kicks in.
+
+test("nobody is an alum while roles.alumni is empty", () => {
+  assert.equal(isAlum("Aisha Okafor"), false);
+  assert.equal(isAlum("Grace Mueller"), false);
+  assert.equal(isAlum(""), false);
+});
+
+test("displayRole passes the role through untouched while there are no alumni", () => {
+  assert.equal(displayRole("Aisha Okafor", "Frontend"), "Frontend");
+  assert.equal(displayRole("Grace Mueller", "Mobile"), "Mobile");
+  assert.equal(displayRole("Pat Visitor", ""), "");
+});
+
+test("no alumni board, and nobody held out of the cumulative totals", () => {
+  const agg = aggregate([
+    ev({ date: "2026-05-04", recipient: "Grace Mueller", role: "Frontend" }),
+    ev({ date: "2026-06-01", recipient: "Aisha Okafor", role: "Frontend" }),
+  ]);
+
+  assert.deepEqual(agg.alumniAllTime, [], "empty roles.alumni means no alumni board");
+  assert.deepEqual(
+    agg.allTime.map((t) => t.name).sort(),
+    ["Aisha Okafor", "Grace Mueller"],
+    "everyone stays on the leaderboard",
+  );
+  assert.equal(agg.allTimeTotal, 2, "no stars are excluded");
+});
+
+test("ALUM_ROLE is not one of roles.values — an alum can't be awarded in it", () => {
+  // Award rows are validated against roles.values (see validateDraftRow in overlay.ts),
+  // so ALUM_ROLE must stay outside it or a staged row for an alum would be rejected.
+  assert.equal(ROLES.includes(ALUM_ROLE), false);
 });

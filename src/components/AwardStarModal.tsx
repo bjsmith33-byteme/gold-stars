@@ -4,7 +4,7 @@ import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
 import Alert from "react-bootstrap/Alert";
 import Nav from "react-bootstrap/Nav";
-import { CATEGORIES, toCsvRow, type StarEvent } from "../lib/aggregate";
+import { CATEGORIES, isAlum, toCsvRow, type StarEvent } from "../lib/aggregate";
 import { buildTeamsNomination, MONITORED_CHATS, teamsChatUrl, chatByKey } from "../lib/teams";
 import type { DraftRow } from "../lib/overlay";
 import { ROSTER, roleFor } from "../config/roster";
@@ -73,7 +73,15 @@ export function AwardStarModal({
   const [msgCopied, setMsgCopied] = useState(false); // chat message copied
   const [stageError, setStageError] = useState("");
 
-  const rosterNames = useMemo(() => Object.keys(ROSTER).sort((a, b) => a.localeCompare(b)), []);
+  // Alumni are filtered out — you can't nominate someone who's left. (They can still be
+  // reached through OTHER if a star genuinely needs backdating for them.)
+  const rosterNames = useMemo(
+    () =>
+      Object.keys(ROSTER)
+        .filter((n) => !isAlum(n))
+        .sort((a, b) => a.localeCompare(b)),
+    [],
+  );
 
   // (Re)initialize the form each time the modal opens — blank for a new star, or
   // pre-filled from initialRow when editing a staged entry.
@@ -132,6 +140,10 @@ export function AwardStarModal({
   const rowObject: Omit<DraftRow, "id"> = {
     date: initialRow?.date || todayIso(),
     recipient,
+    // Alumni aren't in ROSTER, so this is blank for them — same as any off-roster name,
+    // and it keeps a late-arriving star out of the monthly competition. Deliberately NOT
+    // ALUM_ROLE: that isn't in roles.values, so validateDraftRow would reject the row.
+    // The alumni board badges them by name anyway (see displayRole).
     role: roleFor(recipient),
     category: form.category,
     note: form.note,
