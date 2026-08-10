@@ -9,8 +9,10 @@ Built with **Vite + React + TypeScript + React-Bootstrap + React Router** (decla
 `HashRouter`). No backend — all data is read live from one hand-editable CSV.
 
 Everything team-specific lives behind a config seam in **`src/config/`**, so adopting this for
-your own team means editing a handful of files, not hunting through components. See
-[Adopt this for your team](#adopt-this-for-your-team).
+your own team means editing a handful of files, not hunting through components.
+
+👉 **Making this your team's board? Start with [SETUP.md](SETUP.md)** — a step-by-step
+walk-through of every setting. The table below is the short version.
 
 ## Develop
 
@@ -44,6 +46,9 @@ browser at render time, so adding a star is always just appending a row.
 
 ## Adopt this for your team
 
+The quick reference — [SETUP.md](SETUP.md) has the full walk-through, including the
+checklist and troubleshooting.
+
 Four files, then you're done:
 
 | File | What you change |
@@ -60,10 +65,15 @@ Then clear the sample rows from `public/gold-stars.csv` (keep the header).
 
 A few things worth knowing:
 
+- **Replace `contact.adminEmail` / `feedbackEmail`.** They point at the template author, so
+  an un-edited fork emails nominations to a stranger.
 - **`roles.podRoles: []`** (the default here) means one unified board. Fill it in to keep a
   subset of roles on the competitive leaderboard and track everyone else separately.
 - **`features.*`** switches whole features off without deleting their code — Preview mode,
   charts, the Knowledge Base, the chat composer.
+- **Friends & Alumni** (`/friends`) ship off, so the page and its menu item don't exist.
+  Friends needs *both* `features.friendsOfThePod: true` and a non-empty `roles.podRoles`;
+  alumni need only names in `roles.alumni`. See [SETUP.md §6](SETUP.md).
 - **Chat auto-tally:** `src/lib/teams.ts` turns "⭐ @someone 🎨" chat messages into rows. It
   ships **switched off** with a placeholder `chat` block; the parser is fully tested against it.
   To enable, put real chat ids in `chat.monitoredChats`, set `features.chatComposer: true`, and
@@ -98,7 +108,8 @@ src/
   main.tsx                mounts <HashRouter><App/></HashRouter>
   App.tsx                 routes
   config/                 THE seam: types, team.config(+example), roster, copy
-  routes/                 Layout (nav + footer + data fetch), Home, KnowledgeBasePage, About
+  routes/                 Layout (nav + footer + data fetch), Home, KnowledgeBasePage,
+                          FriendsPage (off by default), About
   components/             Leaderboard, banners, MonthSection, CategoryBreakdown, UserStats,
                           KnowledgeBase(+Preview), AwardStarModal, DynamicGraphs, ThemeToggle,
                           StarChartPosterboard, Footer
