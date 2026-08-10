@@ -13,3 +13,6 @@ star_chart_posterboard_short.svg
 
 # NOTE: docs/ is intentionally NOT ignored — it is the built site that GitHub Pages
 # serves. Commit docs/ when you're ready to publish.
+
+# Browser-automation scratch output (playwright-cli)
+.playwright-cli/
