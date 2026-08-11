@@ -5,6 +5,7 @@ import ButtonGroup from "react-bootstrap/ButtonGroup";
 import Button from "react-bootstrap/Button";
 import ListGroup from "react-bootstrap/ListGroup";
 import { AREA_EMOJI, displayRole, personStats, type StarEvent } from "../lib/aggregate";
+import { todayYmd, uniqueSorted } from "../lib/search";
 import { ROSTER, roleFor } from "../config/roster";
 import { SpecialtyBadge } from "./SpecialtyBadge";
 import TEAM from "../config/team.config";
@@ -21,17 +22,13 @@ const PERIODS: { key: PeriodKey; label: string }[] = [
   { key: "all", label: "All time" },
 ];
 
-function ymd(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
 /** cutoff date ("YYYY-MM-DD") for a period, or undefined for all-time. */
 function cutoffFor(period: PeriodKey): string | undefined {
   if (period === "all") return undefined;
   if (period === "ytd") return `${new Date().getFullYear()}-01-01`;
   const d = new Date();
   d.setDate(d.getDate() - (period === "30d" ? 30 : 90));
-  return ymd(d);
+  return todayYmd(d);
 }
 
 export function UserStats({
@@ -43,16 +40,13 @@ export function UserStats({
   selected: string;
   onSelect: (name: string) => void;
 }) {
-  const today = ymd(new Date());
+  const today = todayYmd();
   const name = selected; // controlled by the parent so leaderboard clicks can set it
   const [period, setPeriod] = useState<PeriodKey>("90d");
 
   // Every roster member plus anyone who has a star but isn't on the roster.
   const names = useMemo(
-    () =>
-      [...new Set([...Object.keys(ROSTER), ...events.map((e) => e.recipient)])].sort((a, b) =>
-        a.localeCompare(b),
-      ),
+    () => uniqueSorted([...Object.keys(ROSTER), ...events.map((e) => e.recipient)]),
     [events],
   );
 

@@ -8,6 +8,7 @@ import Col from "react-bootstrap/Col";
 import Alert from "react-bootstrap/Alert";
 import Spinner from "react-bootstrap/Spinner";
 import { currentMonthKey, monthLabel, getMonth } from "../lib/aggregate";
+import { uniqueSorted } from "../lib/search";
 import type { DraftRow } from "../lib/overlay";
 import { Leaderboard } from "../components/Leaderboard";
 import { WinnerBanner } from "../components/WinnerBanner";
@@ -88,7 +89,7 @@ export function Home() {
   const curLabel = monthLabel(curKey);
   const curMonth = getMonth(agg, curKey);
   const pastMonths = agg.months.filter((m) => m.key !== curKey);
-  const subTopics = [...new Set(events.map((e) => e.sub_topic).filter(Boolean))].sort();
+  const subTopics = uniqueSorted(events.map((e) => e.sub_topic).filter(Boolean));
 
   return (
     <div className="d-flex flex-column gap-4">

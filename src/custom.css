@@ -61,6 +61,21 @@
   --bs-accordion-active-bg: var(--gs-header);
   box-shadow: var(--gs-shadow);
 }
+/* Facet menus in the Knowledge Base's advanced search. Without this they'd render on
+   Bootstrap's default body background and read off-palette against the gold cards. */
+.dropdown-menu {
+  --bs-dropdown-bg: var(--gs-card);
+  --bs-dropdown-border-color: var(--gs-line);
+  --bs-dropdown-link-hover-bg: var(--gs-hover);
+  box-shadow: var(--gs-shadow);
+}
+/* Push each facet option's count to the right edge of its row. */
+.facet-option .form-check-label {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+}
 /* Rows transparent so the card behind the names shows; faint dividers. */
 .list-group {
   --bs-list-group-bg: transparent;
