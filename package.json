@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "test": "node --test src/lib/aggregate.test.ts src/lib/overlay.test.ts src/lib/teams.test.ts"
+    "test": "node --test src/lib/aggregate.test.ts src/lib/overlay.test.ts src/lib/teams.test.ts src/lib/search.test.ts"
   },
   "dependencies": {
     "bootstrap": "^5.3.3",
