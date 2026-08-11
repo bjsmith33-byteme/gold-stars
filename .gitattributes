@@ -1,0 +1,19 @@
+# Every text file is stored as LF in the repository AND checked out as LF everywhere.
+#
+# `eol=lf` is the part that matters on Windows: without it, a contributor with git's
+# core.autocrlf=true gets a CRLF working tree on checkout, and the next editor save pushes
+# CRLF back through — producing commits whose entire content is a line-ending flip. This
+# repo has had one of those, a commit whose message described source changes but whose only
+# actual content was docs/index.html re-saved with different endings.
+* text=auto eol=lf
+
+# Files git must never line-ending-convert or try to diff as text.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.woff binary
+*.woff2 binary
