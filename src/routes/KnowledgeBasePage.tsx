@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
+import Accordion from "react-bootstrap/Accordion";
 import Alert from "react-bootstrap/Alert";
 import Button from "react-bootstrap/Button";
 import Collapse from "react-bootstrap/Collapse";
@@ -8,10 +9,15 @@ import InputGroup from "react-bootstrap/InputGroup";
 import Spinner from "react-bootstrap/Spinner";
 import { KnowledgeBase, kbEntries } from "../components/KnowledgeBase";
 import { AdvancedSearchPanel } from "../components/AdvancedSearchPanel";
+import { SubTopicChips } from "../components/SubTopicChips";
+import { QueryTermChips } from "../components/QueryTermChips";
 import { CATEGORIES } from "../lib/aggregate";
+import { KEYWORD_SEARCH_HELP } from "../config/copy";
+import TEAM from "../config/team.config";
 import {
   activeFilterCount,
   applySearch,
+  compileQuery,
   corpusFor,
   dateBounds,
   decodeSearch,
@@ -32,6 +38,10 @@ import { useBoard } from "./Layout";
 const ALL_AREAS = "__all__";
 const MULTI_AREAS = "__multi__";
 
+// The team's search vocabulary. Passed explicitly into the search functions because
+// lib/search.ts is deliberately config-free.
+const SYNONYMS = TEAM.search?.synonyms ?? [];
+
 export function KnowledgeBasePage() {
   const { events, agg, error } = useBoard();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -46,8 +56,17 @@ export function KnowledgeBasePage() {
     [events, state.includeNoNote],
   );
   const bounds = useMemo(() => dateBounds(corpus, today), [corpus, today]);
-  const filtered = useMemo(() => applySearch(events, state, bounds), [events, state, bounds]);
-  const counts = useMemo(() => facetCounts(events, state, bounds), [events, state, bounds]);
+  const filtered = useMemo(
+    () => applySearch(events, state, bounds, SYNONYMS),
+    [events, state, bounds],
+  );
+  const counts = useMemo(
+    () => facetCounts(events, state, bounds, SYNONYMS),
+    [events, state, bounds],
+  );
+  // The same compilation the predicate just ran, handed to the chips so the two can't
+  // disagree about which words were searched.
+  const query = useMemo(() => compileQuery(state.q, SYNONYMS), [state.q]);
   const options = useMemo(() => {
     const built = {} as Record<FacetKey, FacetOption[]>;
     for (const key of FACET_KEYS) {
@@ -93,6 +112,16 @@ export function KnowledgeBasePage() {
         ? keptAreas[0].value
         : MULTI_AREAS;
 
+  /** Drop one chip's term from the box. Removed from the ORIGINAL text (case-insensitively,
+   *  with flexible spacing for multi-word terms) rather than by rebuilding the query from the
+   *  compiled terms, so the rest of what the user typed keeps its casing. Any punctuation left
+   *  stranded is dropped by the next tokenize pass. */
+  const removeTerm = (text: string) => {
+    const pattern = text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\s+/g, "\\s+");
+    const q = state.q.replace(new RegExp(pattern, "i"), " ").replace(/\s+/g, " ").trim();
+    setState({ ...state, q });
+  };
+
   const pickArea = (value: string) => {
     if (value === MULTI_AREAS) return; // display-only; the facet owns that state
     const excluded =
@@ -117,11 +146,21 @@ export function KnowledgeBasePage() {
       <Link to="/" className="text-decoration-none">
         ← Back to the board
       </Link>
-      <div>
-        <h1 className="fw-bold mb-1">📚 Knowledge Base</h1>
-        <p className="text-body-secondary mb-0">
-          Questions &amp; solutions from the team — search or browse by area before re-asking.
-        </p>
+      <div className="d-flex flex-column gap-2">
+        <div>
+          <h1 className="fw-bold mb-1">📚 Knowledge Base</h1>
+          <p className="text-body-secondary mb-0">
+            Questions &amp; solutions from the team — search or browse by area before re-asking.
+          </p>
+        </div>
+        {allEntries.length > 0 && (
+          <Accordion>
+            <Accordion.Item eventKey="how-search-works">
+              <Accordion.Header>How search works 🔍</Accordion.Header>
+              <Accordion.Body>{KEYWORD_SEARCH_HELP}</Accordion.Body>
+            </Accordion.Item>
+          </Accordion>
+        )}
       </div>
 
       {allEntries.length === 0 ? (
@@ -163,6 +202,17 @@ export function KnowledgeBasePage() {
               )}
             </Form.Select>
           </InputGroup>
+
+          <QueryTermChips query={query} onRemoveTerm={removeTerm} />
+
+          <SubTopicChips
+            options={options.sub_topic}
+            counts={counts.sub_topic}
+            excluded={state.excluded.sub_topic}
+            onChange={(next) =>
+              setState({ ...state, excluded: { ...state.excluded, sub_topic: next } })
+            }
+          />
 
           <div>
             <Button

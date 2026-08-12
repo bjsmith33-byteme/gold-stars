@@ -4,7 +4,7 @@ import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
 import InputGroup from "react-bootstrap/InputGroup";
 import ListGroup from "react-bootstrap/ListGroup";
-import type { StarEvent } from "../lib/aggregate";
+import { subTopicsOf, type StarEvent } from "../lib/aggregate";
 import { AREA_EMOJI, kbEntries } from "./KnowledgeBase";
 
 const RECENT_COUNT = 4;
@@ -61,7 +61,7 @@ export function KnowledgeBasePreview({ events }: { events: StarEvent[] }) {
             <div>{e.note}</div>
             <div className="small text-body-secondary">
               {AREA_EMOJI[e.category] ?? "✨"} {e.category || "Uncategorized"}
-              {e.sub_topic.trim() ? ` · ${e.sub_topic.trim()}` : ""} — {e.recipient} · {e.date}
+              {subTopicsOf(e).map((t) => ` · ${t}`).join("")} — {e.recipient} · {e.date}
             </div>
           </ListGroup.Item>
         ))}

@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import Card from "react-bootstrap/Card";
-import { AREA_EMOJI, type StarEvent } from "../lib/aggregate";
+import { AREA_EMOJI, primarySubTopic, subTopicsOf, type StarEvent } from "../lib/aggregate";
 import { BLANK_LABEL, corpusFor, orderedByKnown } from "../lib/search";
 
 // Re-exported because KnowledgeBasePreview has always imported it from here.
@@ -16,6 +16,11 @@ export function kbEntries(events: StarEvent[]): StarEvent[] {
 
 /** The browsable knowledge base, grouped area → sub-topic with the newest entry first. The
  *  recipient is the person who solved it (your go-to expert).
+ *
+ *  An entry can carry several sub-topic tags, but it's filed under its FIRST one only, so it
+ *  appears exactly once in the tree and each area's count still adds up. The remaining tags
+ *  ride along on the entry as muted cross-references — that's how browsing (rather than
+ *  searching) surfaces the fact that a "Read-only" entry is also a "configuration" one.
  *
  *  Presentational: the page owns the search state and hands down the already-filtered
  *  `entries` plus the area ordering to group by. */
@@ -38,7 +43,7 @@ export function KnowledgeBase({
       .map((category) => {
         const byTopic = new Map<string, StarEvent[]>();
         for (const e of byCat.get(category)!) {
-          const t = e.sub_topic.trim() || BLANK_LABEL.sub_topic;
+          const t = primarySubTopic(e) || BLANK_LABEL.sub_topic;
           (byTopic.get(t) ?? byTopic.set(t, []).get(t)!).push(e);
         }
         const topics = [...byTopic.entries()]
@@ -87,6 +92,14 @@ export function KnowledgeBase({
                       </div>
                       <div className="small text-body-secondary">
                         — {e.recipient} · {e.date}
+                        {/* Cross-references: the tags this entry ISN'T filed under here. */}
+                        {subTopicsOf(e)
+                          .slice(1)
+                          .map((tag) => (
+                            <span key={tag} className="ms-2 badge text-body-secondary border">
+                              {tag}
+                            </span>
+                          ))}
                       </div>
                     </li>
                   ))}

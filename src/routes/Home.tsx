@@ -7,7 +7,7 @@ import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import Alert from "react-bootstrap/Alert";
 import Spinner from "react-bootstrap/Spinner";
-import { currentMonthKey, monthLabel, getMonth } from "../lib/aggregate";
+import { currentMonthKey, monthLabel, getMonth, subTopicsOf } from "../lib/aggregate";
 import { uniqueSorted } from "../lib/search";
 import type { DraftRow } from "../lib/overlay";
 import { Leaderboard } from "../components/Leaderboard";
@@ -91,7 +91,8 @@ export function Home() {
   const curLabel = monthLabel(curKey);
   const curMonth = getMonth(agg, curKey);
   const pastMonths = agg.months.filter((m) => m.key !== curKey);
-  const subTopics = uniqueSorted(events.map((e) => e.sub_topic).filter(Boolean));
+  // Flattened across tags, not whole cells — "Hooks; Forms" must offer two suggestions.
+  const subTopics = uniqueSorted(events.flatMap((e) => subTopicsOf(e)));
 
   return (
     <div className="d-flex flex-column gap-4">

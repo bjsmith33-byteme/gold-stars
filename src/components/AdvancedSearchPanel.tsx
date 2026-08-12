@@ -14,14 +14,20 @@ import TEAM from "../config/team.config";
 
 /** Human labels for the facets. These live here rather than in lib/search.ts because that
  *  module is deliberately config-free — and the role column's label is a team setting
- *  ("Role" here, "Specialty" in other boards). */
-const FACET_LABELS: Record<FacetKey, string> = {
+ *  ("Role" here, "Specialty" in other boards). Exported so SubTopicChips labels its row
+ *  from the same place, even though that facet no longer appears in this panel. */
+export const FACET_LABELS: Record<FacetKey, string> = {
   recipient: "Recipient",
   role: TEAM.roles.label,
   category: "Area",
   sub_topic: "Sub-topic",
   awarded_by: "Awarder",
 };
+
+/** The facets this panel draws. `sub_topic` is absent on purpose: the chip row above the
+ *  panel owns it, and one piece of state with two controls is how you get a dropdown and a
+ *  chip disagreeing about what's selected. */
+const PANEL_FACET_KEYS = FACET_KEYS.filter((k) => k !== "sub_topic");
 
 /** The advanced-search body: date range, corpus toggle, the five facets, and a live count
  *  of what the current criteria will return. Fully controlled — every change goes back up
@@ -49,7 +55,7 @@ export function AdvancedSearchPanel({
   return (
     <div className="d-flex flex-column gap-3 border rounded p-3">
       <div className="d-flex flex-wrap gap-2 align-items-center">
-        {FACET_KEYS.map((key) => (
+        {PANEL_FACET_KEYS.map((key) => (
           <FacetDropdown
             key={key}
             id={key}
