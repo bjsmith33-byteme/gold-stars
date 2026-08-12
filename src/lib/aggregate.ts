@@ -100,6 +100,20 @@ export function toCsvRow(e: StarEvent): string {
   return Papa.unparse([CSV_COLUMNS.map((c) => e[c])], { header: false });
 }
 
+// ── Sub-topic tags ───────────────────────────────────────────────────────────
+// The `sub_topic` cell holds a "; "-separated LIST of tags, the first of which is the
+// entry's home in the knowledge-base tree. The implementation lives in lib/search.ts (the
+// config-free module — the sub_topic facet is built on it and search.test.ts must not pull
+// in team.config), and is re-exported here so every caller reads the CSV column's helpers
+// from the CSV module.
+export {
+  SUB_TOPIC_SEP,
+  splitSubTopics,
+  subTopicsOf,
+  primarySubTopic,
+  joinSubTopics,
+} from "./search.ts";
+
 export interface MonthData {
   key: string; // "2026-05"
   label: string; // "May 2026"
@@ -165,14 +179,21 @@ function monthRange(startKey: string, endKey: string): string[] {
 }
 
 /** Stats for one person over a time window — total, pod rank, a month-by-month trend,
- *  their category mix, and their recent stars. `cutoff` ("YYYY-MM-DD") bounds the
- *  window (omit for all-time); `today` ("YYYY-MM-DD") sets the trend's right edge. */
+ *  their category mix, and their recent stars.
+ *
+ *  `cutoff` and `until` ("YYYY-MM-DD", both optional and both inclusive) bound the window;
+ *  omit both for all-time. `today` sets the trend's right edge unless `until` moves it in,
+ *  which is what makes a custom range shorten the chart at BOTH ends rather than just
+ *  filtering rows out of a fixed axis. Rank and peers come from the same window, so they
+ *  follow whatever range is asked for. */
 export function personStats(
   events: StarEvent[],
   name: string,
-  { cutoff, today }: { cutoff?: string; today: string },
+  { cutoff, until, today }: { cutoff?: string; until?: string; today: string },
 ): PersonStats {
-  const periodEvents = events.filter((e) => !cutoff || e.date >= cutoff);
+  const periodEvents = events.filter(
+    (e) => (!cutoff || e.date >= cutoff) && (!until || e.date <= until),
+  );
   const mine = periodEvents
     .filter((e) => e.recipient === name)
     .sort((a, b) => a.date.localeCompare(b.date));
@@ -184,9 +205,9 @@ export function personStats(
   const mineStars = mine.length;
   const rank = mineStars > 0 ? tallies.filter((t) => t.stars > mineStars).length + 1 : 0;
 
-  // Continuous month axis: from the window start (or first star) to today.
-  const endKey = today.slice(0, 7);
-  const startKey = (cutoff ?? mine[0]?.date ?? today).slice(0, 7);
+  // Continuous month axis: from the window start (or first star) to the window end.
+  const endKey = (until ?? today).slice(0, 7);
+  const startKey = (cutoff ?? mine[0]?.date ?? until ?? today).slice(0, 7);
   const keys = monthRange(startKey > endKey ? endKey : startKey, endKey);
   const spansYears = keys.length > 0 && keys[0].slice(0, 4) !== keys[keys.length - 1].slice(0, 4);
   const byMonth: MonthCount[] = keys.map((key) => {
