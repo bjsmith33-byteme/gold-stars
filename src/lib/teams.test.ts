@@ -6,6 +6,8 @@ import {
   validateStar,
   partitionStars,
   buildTeamsNomination,
+  parseNominationExtras,
+  stripTagBrackets,
   teamsChatUrl,
   chatByKey,
   MONITORED_CHATS,
@@ -187,6 +189,101 @@ test("a composed message parses back to the intended recipient + area (round-tri
   );
   assert.equal(fallback?.recipient, "Ana Silva");
   assert.equal(fallback?.category, "JavaScript");
+});
+
+// --- sub-topics and the write-up: composer -> message -> CSV ---
+
+test("buildTeamsNomination brackets the sub-topic tags before the prose", () => {
+  assert.equal(
+    buildTeamsNomination({
+      recipient: "Raj Patel",
+      category: "CSS",
+      subTopics: ["flexbox", "grid"],
+      detail: "gap beats margins for spacing children",
+    }),
+    "⭐ Gold star for Raj Patel 🎨 [flexbox; grid] — gap beats margins for spacing children",
+  );
+  // No tags, no brackets — the message stays as short as it was.
+  assert.equal(
+    buildTeamsNomination({ recipient: "Raj Patel", category: "CSS", detail: "nice" }),
+    "⭐ Gold star for Raj Patel 🎨 — nice",
+  );
+});
+
+test("parseNominationExtras round-trips the composer's own output", () => {
+  const content = buildTeamsNomination({
+    recipient: "Raj Patel",
+    category: "CSS",
+    subTopics: ["flexbox", "grid"],
+    detail: "use gap instead of last-child margin hacks",
+  });
+  assert.deepEqual(parseNominationExtras(content), {
+    subTopic: "flexbox; grid",
+    note: "use gap instead of last-child margin hacks",
+  });
+});
+
+test("a composed message lands both the tags and the write-up in the row", () => {
+  const content = buildTeamsNomination({
+    recipient: "Ana Silva",
+    category: "CSS",
+    subTopics: ["flexbox"],
+    detail: "center a div with justify-content and align-items",
+  });
+  const s = one(msg({ content, mentions: [] }));
+  assert.equal(s?.sub_topic, "flexbox");
+  assert.equal(s?.note, "center a div with justify-content and align-items");
+  assert.equal(s?.category, "CSS");
+  assert.equal(s?.recipient, "Ana Silva");
+});
+
+test("prose is taken only from a composer-shaped message, so the KB stays clean", () => {
+  // A note is what promotes a row to a knowledge-base entry, so an ordinary chat tail must
+  // not become one.
+  assert.equal(one(msg({ content: "Gold star ⭐ @Ana Silva" }))?.note, "", "no dash, no note");
+  assert.equal(
+    one(msg({ content: "you're a legend, gold star ⭐ — thanks!!" }))?.note,
+    "",
+    "the star signal doesn't lead, so the tail is just chat",
+  );
+  assert.equal(
+    one(msg({ content: "⭐ gold star @Ana Silva — explained the render cycle" }))?.note,
+    "explained the render cycle",
+  );
+});
+
+test("an em-dash inside the write-up survives", () => {
+  const s = one(msg({ content: "⭐ star @Ana Silva — first — second" }));
+  assert.equal(s?.note, "first — second");
+});
+
+test("tags are read from a hand-typed message and normalized", () => {
+  const s = one(msg({ content: "⭐ @Ana Silva [data flow;state; State]" }));
+  assert.equal(s?.sub_topic, "data flow; state", "split, trimmed, de-duped");
+});
+
+test("a tag can't hijack the area or be mistaken for a recipient", () => {
+  // "css" matches the CSS area's tallyPatterns, but here it's a LABEL on a star with no
+  // other area signal — so the row must stay on the fallback area.
+  const s = one(msg({ content: "Gold star ⭐ @Ana Silva [css grid]" }));
+  assert.equal(s?.category, "JavaScript", "chat.fallbackCategory, not CSS");
+  assert.equal(s?.sub_topic, "css grid");
+
+  // "Raj" inside a tag must not add Raj Patel as a second recipient.
+  const rows = messageToStars(msg({ content: "Gold star ⭐ @Ana Silva [Raj's hooks]" }));
+  assert.deepEqual(rows.map((r) => r.recipient), ["Ana Silva"]);
+});
+
+test("stripTagBrackets leaves an untagged message alone", () => {
+  assert.equal(stripTagBrackets("⭐ Gold star for Ana Silva 🎨"), "⭐ Gold star for Ana Silva 🎨");
+});
+
+test("a tagged row still passes validation", () => {
+  // The formula guard walks every column as a string, so the joined cell is covered already.
+  assert.deepEqual(validateStar(row({ sub_topic: "flexbox; grid" })), []);
+  assert.deepEqual(validateStar(row({ sub_topic: "=cmd(); grid" })), [
+    "possible formula injection in sub_topic",
+  ]);
 });
 
 // --- chat picker (composer "Post in" dropdown + ?chat= deep link) ---

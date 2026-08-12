@@ -17,6 +17,13 @@
 //   * RECIPIENTS: every @mention PLUS every unambiguous roster first name in the text
 //     (resolved to roster full names, de-duped) — so one kudos can thank several
 //     people, yielding ONE ROW PER RECIPIENT. Nominator (`awarded_by`) = the author.
+//   * SUB-TOPICS: a bracketed group, "[Hooks; Forms]", anywhere in the message. Read as
+//     tags and then removed before area/name detection, so a label can't be mistaken for
+//     content. Optional — most hand-typed kudos have none.
+//   * WRITE-UP: the prose after the first em-dash, but ONLY on a composer-shaped message
+//     (star signal first, then " — ", then the text). A note is what promotes a row to a
+//     knowledge-base entry, so arbitrary chat tails are left alone rather than published as
+//     one.
 //   * AREA (earliest signal wins): each area's emoji/keyword patterns come from
 //     `categories[].tallyPatterns` in src/config/team.config.ts; anything unmatched
 //     falls through to `chat.fallbackCategory`. In this template that means
@@ -39,7 +46,7 @@ import type { StarEvent } from "./aggregate";
 import type { MonitoredChat } from "../config/types.ts";
 // Explicit .ts extension so Node's test runner (type-stripping) can resolve these at
 // runtime; tsc/vite accept it via allowImportingTsExtensions.
-import { CATEGORY_EMOJI } from "./aggregate.ts";
+import { CATEGORY_EMOJI, joinSubTopics, splitSubTopics } from "./aggregate.ts";
 import { ROSTER, roleFor } from "../config/roster.ts";
 import TEAM from "../config/team.config.ts";
 
@@ -173,21 +180,31 @@ export function messageToStars(msg: TeamsMessage): StarEvent[] {
   const plain = toPlainText(raw);
   if (!hasStar(raw, plain)) return [];
 
-  const recipients = recipientsFor(msg, plain);
+  // Sub-topic tags are a label, not content: read them out first, then take them back OUT of
+  // the text everything else reads. A tag like "[CSS grid]" would otherwise match the CSS
+  // area's tallyPatterns and quietly overrule the area the awarder chose, and "[Raj's hooks]"
+  // would be mistaken for a recipient.
+  const { subTopic, note } = parseNominationExtras(plain);
+  const searchable = stripTagBrackets(plain);
+  const rawWithoutTags = raw.replace(TAG_BRACKETS, " ");
+
+  const recipients = recipientsFor(msg, searchable);
   if (recipients.length === 0) return [];
 
   const date = msg.createdAt.slice(0, 10); // YYYY-MM-DD
-  const category = categoryFor(raw); // shared by all recipients of this message
+  const category = categoryFor(rawWithoutTags); // shared by all recipients of this message
   const awarded_by = msg.authorName.trim(); // the person who posted the kudos
   return recipients.map((name) => ({
     date,
     recipient: name,
     role: roleFor(name),
     category,
-    note: "", // the KB summary is written by a human during review
+    // Prose from a composer-shaped message; otherwise blank, and the KB summary is written
+    // by a human during review.
+    note,
     source: "Teams",
     awarded_by,
-    sub_topic: "",
+    sub_topic: subTopic,
   }));
 }
 
@@ -205,17 +222,65 @@ export function messagesToStars(messages: TeamsMessage[]): StarEvent[] {
 // ---------------------------------------------------------------------------
 
 /** Compose a ready-to-paste Teams kudos: a ⭐, the recipient, the area emoji (so
- *  categoryFor picks the area), then optional free-text context. */
+ *  categoryFor picks the area), the sub-topic tags in [brackets], then optional free-text
+ *  context after an em-dash. Both of the trailing parts are read back by
+ *  parseNominationExtras, which is what lets a chat shout-out become a knowledge-base entry
+ *  instead of a bare tally mark. */
 export function buildTeamsNomination(opts: {
   recipient: string;
   category: string;
   detail?: string;
+  subTopics?: string[];
 }): string {
-  const head = ["⭐ Gold star for", opts.recipient.trim(), CATEGORY_EMOJI[opts.category] ?? ""]
+  const tags = joinSubTopics(opts.subTopics ?? []);
+  const head = [
+    "⭐ Gold star for",
+    opts.recipient.trim(),
+    CATEGORY_EMOJI[opts.category] ?? "",
+    tags ? `[${tags}]` : "",
+  ]
     .filter(Boolean)
     .join(" ");
   const detail = opts.detail?.trim();
   return detail ? `${head} — ${detail}` : head;
+}
+
+/** The bracket group carrying sub-topic tags, e.g. "[Hooks; Forms]". Bounded so a stray
+ *  bracket in a long message can't swallow half of it. */
+const TAG_BRACKETS = /\[([^\]\n]{1,120})\]/;
+
+// An em-dash (or " -- ") separates the kudos head from its prose. Only the FIRST one splits;
+// anything after it, dashes included, is prose.
+const DETAIL_SPLIT = /\s(?:—|–|--)\s/;
+
+// "Composer-shaped" = the message LEADS with the star signal, the way buildTeamsNomination
+// writes it. A mid-sentence "great work — thanks!" doesn't qualify, so its tail stays out of
+// the knowledge base.
+const COMPOSER_HEAD = /^\s*(?:⭐|🌟|gold star\b|star\b)/i;
+
+/** Strip the tag brackets out of a message. Run before recipient/area detection so a tag like
+ *  "[Raj's hooks]" can't be read as a recipient or drag the area off target. */
+export function stripTagBrackets(text: string): string {
+  return text.replace(TAG_BRACKETS, " ").replace(/\s+/g, " ").trim();
+}
+
+/** Pull the sub-topic tags and the write-up out of a kudos message.
+ *
+ *  Tags come from any message carrying brackets — typing them is an explicit act, so it's a
+ *  safe signal. The WRITE-UP is deliberately fussier: a note is what makes a row a
+ *  knowledge-base entry, so lifting prose out of every chat message would fill the KB with
+ *  "thanks!!" and "you're a legend". It's taken only from a composer-shaped message: the star
+ *  signal up front, then an em-dash, then the prose. Everything else keeps an empty note and
+ *  gets its summary written by a human during review. */
+export function parseNominationExtras(plain: string): { subTopic: string; note: string } {
+  const tagMatch = TAG_BRACKETS.exec(plain);
+  const subTopic = tagMatch ? joinSubTopics(splitSubTopics(tagMatch[1])) : "";
+
+  const body = stripTagBrackets(plain);
+  const split = COMPOSER_HEAD.test(body) ? body.split(DETAIL_SPLIT) : [];
+  const note = split.length > 1 ? split.slice(1).join(" — ").trim() : "";
+
+  return { subTopic, note };
 }
 
 // ---------------------------------------------------------------------------

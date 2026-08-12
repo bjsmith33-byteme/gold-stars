@@ -4,7 +4,14 @@ import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
 import Alert from "react-bootstrap/Alert";
 import Nav from "react-bootstrap/Nav";
-import { CATEGORIES, isAlum, toCsvRow, type StarEvent } from "../lib/aggregate";
+import {
+  CATEGORIES,
+  isAlum,
+  joinSubTopics,
+  splitSubTopics,
+  toCsvRow,
+  type StarEvent,
+} from "../lib/aggregate";
 import { buildTeamsNomination, MONITORED_CHATS, teamsChatUrl, chatByKey } from "../lib/teams";
 import type { DraftRow } from "../lib/overlay";
 import { ROSTER, roleFor } from "../config/roster";
@@ -36,8 +43,91 @@ function todayIso(): string {
 }
 
 /** The free-text fields a user edits — recipient is a roster dropdown (handled
- *  separately), date is "now", and role is looked up, so none are exposed here. */
-type FormFields = Pick<StarEvent, "category" | "note" | "awarded_by" | "sub_topic">;
+ *  separately), date is "now", and role is looked up, so none are exposed here.
+ *  Sub-topics are held as a LIST here and joined into the CSV cell on the way out. */
+type FormFields = Pick<StarEvent, "category" | "note" | "awarded_by"> & { subTopics: string[] };
+
+/** Tag entry for sub-topics: a suggestion-backed text box that turns what you type into
+ *  removable chips. Enter, a comma or a semicolon commits; so does leaving the field, which
+ *  is what makes Tab work without hijacking it. Backspace on an empty box takes back the last
+ *  tag. The FIRST tag is the entry's home in the knowledge base, so it's called out once
+ *  there's more than one to order. */
+function SubTopicTagInput({
+  tags,
+  suggestions,
+  onChange,
+}: {
+  tags: string[];
+  suggestions: string[];
+  onChange: (next: string[]) => void;
+}) {
+  const [draft, setDraft] = useState("");
+
+  const commit = (raw: string) => {
+    setDraft("");
+    // splitSubTopics does the sanitizing: trims, drops blanks, and divides a pasted
+    // "Forms; Validation" into two tags rather than storing a delimiter inside one.
+    const next = joinSubTopics([...tags, raw]);
+    if (next !== joinSubTopics(tags)) onChange(splitSubTopics(next));
+  };
+
+  return (
+    <>
+      {tags.length > 0 && (
+        <div className="d-flex flex-wrap gap-2 mb-2">
+          {tags.map((tag, i) => (
+            <Button
+              key={tag}
+              size="sm"
+              variant="outline-secondary-selected"
+              className="rounded-pill py-0"
+              onClick={() => onChange(tags.filter((t) => t !== tag))}
+              aria-label={`Remove the ${tag} sub-topic`}
+              title={
+                i === 0 && tags.length > 1
+                  ? `"${tag}" is where this lands in the knowledge base`
+                  : `Remove "${tag}"`
+              }
+            >
+              {tag}
+              {i === 0 && tags.length > 1 && <span className="opacity-75"> · filed here</span>}
+              <span aria-hidden="true" className="ms-1">
+                ⨯
+              </span>
+            </Button>
+          ))}
+        </div>
+      )}
+      <Form.Control
+        list="subtopic-suggestions"
+        value={draft}
+        placeholder={SUB_TOPIC_PLACEHOLDER}
+        onChange={(e) => {
+          // A comma is how people naturally separate tags, so accept it as a commit key. It
+          // becomes the real delimiter rather than whitespace, so typing (or pasting)
+          // "Forms, Validation" yields TWO tags instead of one called "Forms Validation".
+          const v = e.target.value;
+          if (/[,;]/.test(v)) commit(v.replace(/,/g, ";"));
+          else setDraft(v);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault(); // don't submit the form
+            commit(draft);
+          } else if (e.key === "Backspace" && !draft && tags.length) {
+            onChange(tags.slice(0, -1));
+          }
+        }}
+        onBlur={() => commit(draft)}
+      />
+      <datalist id="subtopic-suggestions">
+        {suggestions.map((s) => (
+          <option key={s} value={s} />
+        ))}
+      </datalist>
+    </>
+  );
+}
 
 export function AwardStarModal({
   show,
@@ -64,7 +154,7 @@ export function AwardStarModal({
     category: CATEGORIES[0],
     note: "",
     awarded_by: "",
-    sub_topic: "",
+    subTopics: [],
   });
   // Recipient: a roster name, "" (nothing picked), or OTHER (then customName is used).
   const [recipientSel, setRecipientSel] = useState("");
@@ -92,7 +182,7 @@ export function AwardStarModal({
       category: r?.category ?? CATEGORIES[0],
       note: r?.note ?? "",
       awarded_by: r?.awarded_by ?? "",
-      sub_topic: r?.sub_topic ?? "",
+      subTopics: splitSubTopics(r?.sub_topic ?? ""),
     });
     if (r?.recipient && rosterNames.includes(r.recipient)) {
       setRecipientSel(r.recipient);
@@ -117,8 +207,12 @@ export function AwardStarModal({
     setMsgCopied(false);
     setStageError("");
   };
-  const set = (k: keyof FormFields, v: string) => {
+  const set = (k: "category" | "note" | "awarded_by", v: string) => {
     setForm((f) => ({ ...f, [k]: v }));
+    clearCopied();
+  };
+  const setSubTopics = (subTopics: string[]) => {
+    setForm((f) => ({ ...f, subTopics }));
     clearCopied();
   };
 
@@ -133,6 +227,7 @@ export function AwardStarModal({
     recipient,
     category: form.category,
     detail: form.note,
+    subTopics: form.subTopics,
   });
 
   // Date defaults to today (entry time) but is preserved when editing a staged row;
@@ -149,7 +244,7 @@ export function AwardStarModal({
     note: form.note,
     source: initialRow?.source || "Email",
     awarded_by: form.awarded_by.trim(),
-    sub_topic: form.sub_topic.trim(),
+    sub_topic: joinSubTopics(form.subTopics),
   };
   const row = toCsvRow({ ...rowObject, source: mode === "stage" ? rowObject.source : "Manual" });
 
@@ -189,10 +284,47 @@ export function AwardStarModal({
   const editing = mode === "stage" && !!initialRow;
   const showChatComposer = tabsVisible && tab === "teams";
 
+  // The write-up is what feeds the knowledge base, so both tabs ask for it the same way —
+  // same label, same shape, same placeholder. Only the requirement differs: a CSV row without
+  // a write-up is a dead knowledge-base entry, while blocking a quick chat shout-out on
+  // paperwork is how you stop people saying thank you.
+  const csvPreview = (
+    <pre
+      className="border rounded bg-body-tertiary px-3 py-2 mb-0"
+      style={{ whiteSpace: "pre-wrap", wordBreak: "break-all", fontSize: "0.75rem" }}
+    >
+      {row}
+    </pre>
+  );
+
+  const noteRequired = !showChatComposer;
+  const noteField = (
+    <Form.Group>
+      <Form.Label className="small fw-semibold">
+        Problem &amp; solution{" "}
+        {noteRequired ? "*" : <span className="fw-normal text-body-secondary">(optional)</span>}
+      </Form.Label>
+      <Form.Control
+        as="textarea"
+        rows={2}
+        value={form.note}
+        onChange={(e) => set("note", e.target.value)}
+        placeholder="Briefly: what was the problem, and how was it solved?"
+      />
+      <Form.Text>
+        A short summary feeds the knowledge base so the team can learn from it later.
+        {!noteRequired && " It rides along in the message you post, so the tally can file it."}
+      </Form.Text>
+    </Form.Group>
+  );
+
   return (
     <Modal show={show} onHide={onClose} centered scrollable size="lg">
       <Modal.Header closeButton>
-        <Modal.Title>{editing ? "✎ Edit staged star" : "⭐ Award a Gold Star"}</Modal.Title>
+        {/* "Award a Star" verbatim — the button that opens this, About, the README and the
+            mailto body all say that, and a title that renames it mid-flow reads as a
+            different feature. */}
+        <Modal.Title>{editing ? "✎ Edit staged star" : "⭐ Award a Star"}</Modal.Title>
       </Modal.Header>
 
       <Modal.Body className="d-flex flex-column gap-3">
@@ -265,21 +397,28 @@ export function AwardStarModal({
             </Form.Select>
           </Form.Group>
 
+          {/* Sub-topics and the write-up are asked for identically on both tabs — the chat
+              message carries them through to the CSV just as the emailed row does. */}
+          <Form.Group>
+            <Form.Label className="small fw-semibold">
+              Sub-topics <span className="fw-normal text-body-secondary">(optional)</span>
+            </Form.Label>
+            <SubTopicTagInput
+              tags={form.subTopics}
+              suggestions={subTopics}
+              onChange={setSubTopics}
+            />
+            <Form.Text>
+              Finer labels within the area — pick existing ones or type new ones, as many as fit.
+              {form.subTopics.length > 1 && " The first is where it's filed; the rest cross-reference it."}
+            </Form.Text>
+          </Form.Group>
+
+          {noteField}
+
           {showChatComposer ? (
             /* ---- Chat composer ---- */
             <>
-              <Form.Group>
-                <Form.Label className="small fw-semibold">
-                  What knowledge did they share?{" "}
-                  <span className="fw-normal text-body-secondary">(optional)</span>
-                </Form.Label>
-                <Form.Control
-                  value={form.note}
-                  onChange={(e) => set("note", e.target.value)}
-                  placeholder="Brief recap of context to add to KB"
-                />
-              </Form.Group>
-
               <div>
                 <div className="small fw-semibold mb-1">Message to post</div>
                 <pre
@@ -329,40 +468,6 @@ export function AwardStarModal({
             <>
               <Form.Group>
                 <Form.Label className="small fw-semibold">
-                  Sub-topic <span className="fw-normal text-body-secondary">(optional)</span>
-                </Form.Label>
-                <Form.Control
-                  list="subtopic-suggestions"
-                  value={form.sub_topic}
-                  onChange={(e) => set("sub_topic", e.target.value)}
-                  placeholder={SUB_TOPIC_PLACEHOLDER}
-                />
-                <datalist id="subtopic-suggestions">
-                  {subTopics.map((s) => (
-                    <option key={s} value={s} />
-                  ))}
-                </datalist>
-                <Form.Text>
-                  A finer label within the area — pick an existing one or type a new one.
-                </Form.Text>
-              </Form.Group>
-
-              <Form.Group>
-                <Form.Label className="small fw-semibold">Problem &amp; solution *</Form.Label>
-                <Form.Control
-                  as="textarea"
-                  rows={2}
-                  value={form.note}
-                  onChange={(e) => set("note", e.target.value)}
-                  placeholder="Briefly: what was the problem, and how was it solved?"
-                />
-                <Form.Text>
-                  A short summary feeds the knowledge base so the team can learn from it later.
-                </Form.Text>
-              </Form.Group>
-
-              <Form.Group>
-                <Form.Label className="small fw-semibold">
                   Awarded by{" "}
                   <span className="fw-normal text-body-secondary">
                     (optional, not shown on the board)
@@ -374,16 +479,6 @@ export function AwardStarModal({
                   placeholder="Your name"
                 />
               </Form.Group>
-
-              <div>
-                <div className="small fw-semibold text-body-secondary mb-1">CSV row preview</div>
-                <pre
-                  className="border rounded bg-body-tertiary px-3 py-2 mb-0"
-                  style={{ whiteSpace: "pre-wrap", wordBreak: "break-all", fontSize: "0.75rem" }}
-                >
-                  {row}
-                </pre>
-              </div>
 
               {mode === "stage" ? (
                 <>
@@ -416,8 +511,12 @@ export function AwardStarModal({
                 </div>
               )}
 
-              {/* Hidden entirely when the team hasn't configured a csvEditUrl, and in stage
-                  mode (where the draft is the hand-off). */}
+              {/* The CSV row lives in here rather than sitting open above the button: it's
+                  plumbing, and nobody filling in the form needs to read it. Putting it beside
+                  the copy-and-paste flow also settles which row it's showing — `source` is
+                  "Manual" for a row you paste yourself and "Email" for the one the mail button
+                  sends, so out here the preview didn't match either hand-off.
+                  Hidden entirely when the team hasn't configured a csvEditUrl. */}
               {CSV_EDIT_URL && mode !== "stage" && (
                 <details>
                   <summary className="small text-body-secondary" style={{ cursor: "pointer" }}>
@@ -429,6 +528,7 @@ export function AwardStarModal({
                       then <strong>paste it as a new line at the end and commit</strong>. Paste only
                       this exact row, so a stray comma or pasted formula can't slip into the data.
                     </p>
+                    {csvPreview}
                     <div>
                       <Button
                         variant="outline-secondary"
@@ -442,6 +542,17 @@ export function AwardStarModal({
                       </Button>
                     </div>
                   </div>
+                </details>
+              )}
+
+              {/* Stage mode has no GitLab hand-off to hang the preview off, but the row is
+                  still worth being able to check before it joins the draft. */}
+              {mode === "stage" && (
+                <details>
+                  <summary className="small text-body-secondary" style={{ cursor: "pointer" }}>
+                    Advanced: see the CSV row this writes
+                  </summary>
+                  <div className="mt-2 ps-3 border-start">{csvPreview}</div>
                 </details>
               )}
             </>
