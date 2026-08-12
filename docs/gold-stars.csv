@@ -31,4 +31,16 @@ date,recipient,role,category,note,source,awarded_by,sub_topic
 2026-07-03,Fatima Al-Sayed,Frontend,React,"State updates are asynchronous and batched — the variable won't change on the next line. Read the new value on the next render, or use the functional updater setX(prev => ...).",Manual,Mei Lin Chen,state
 2026-07-03,Yuki Sato,Frontend,React,"Fetching in useEffect? Guard the response race: set an ignore flag (or use AbortController) in the cleanup so a slow earlier request can't overwrite newer data.",Manual,Zoe Anderson,effects
 2026-07-02,Aisha Okafor,Frontend,React,"Keep hooks unconditional: always call them at the top level, never inside if statements or loops, so their order stays stable across every render.",Manual,Priya Nair,hooks
+2026-07-06,Aisha Okafor,Frontend,React,"Pushing to a state array does nothing -- React compares by reference, so it never sees a change. Build a new array instead: setItems([...items, next]).",Manual,Mei Lin Chen,state
+2026-07-07,Aisha Okafor,Frontend,React,"It's className, not class -- class is a reserved word in JavaScript. Same reason a label uses htmlFor instead of for.",Manual,Yuki Sato,jsx
+2026-07-08,Yuki Sato,Frontend,React,"onClick={handleDelete(id)} calls the function during render instead of on click. Wrap it: onClick={() => handleDelete(id)}.",Manual,Aisha Okafor,events
+2026-07-09,Aisha Okafor,Frontend,React,,Manual,Priya Nair,
+2026-07-13,Ingrid Larsson,Frontend,React,"{count && <Badge/>} renders a literal 0 when count is 0, because 0 is falsy but still a valid child. Use {count > 0 && ...} or a ternary.",Manual,Aisha Okafor,jsx
+2026-07-14,Aisha Okafor,Frontend,React,"Return several elements without an extra wrapper div by using a fragment: <>...</>. Use the long form <React.Fragment key={id}> when the list needs a key.",Manual,Grace Mueller,jsx
+2026-07-16,Grace Mueller,Frontend,React,,Manual,,
+2026-07-20,Aisha Okafor,Frontend,React,"Props are read-only. To change a value the parent owns, take a callback down as a prop and call it -- data flows one way, events flow back up.",Manual,Fatima Al-Sayed,props
+2026-07-22,Mei Lin Chen,Frontend,React,"A form that reloads the whole page on submit is missing e.preventDefault() in its onSubmit handler.",Manual,Aisha Okafor,forms
+2026-07-27,Aisha Okafor,Frontend,React,,Email,Zoe Anderson,hooks
 2026-08-01,Aisha Okafor,Frontend,React,"Updates not appearing on live site because I forgot to npm run build",Email,,deploy
+2026-08-03,Nina Petrova,Full-stack,React,"useMemo is for genuinely expensive work, not every derived value -- the dependency comparison costs something too.",Manual,,
+2026-08-07,Aisha Okafor,Frontend,React,"Why is my state one render behind inside an event handler? The value was captured when that render happened. Read it from the functional updater, or keep it in a ref.",Manual,Priya Nair,hooks

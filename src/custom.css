@@ -149,18 +149,18 @@
 }
 
 [data-bs-theme="dark"] .btn-outline-secondary {
-   border-color: #00D1FF ;
-   color: #00D1FF  ;
+   border-color: #0263c5 ;
+   color: #0088ff  ;
    background-color: #0e0a05;
 }
 [data-bs-theme="dark"] .btn-outline-secondary:hover,
 [data-bs-theme="dark"] .btn-outline-secondary:focus {
   border-color: #0263c5;
-  background-color: #56b4e9;
+  background-color: #0263c5;
   color: #000000;
 }
 [data-bs-theme="dark"] .btn-outline-secondary-selected {
   border-color: #0088ff;
-  background-color: #56b4e9;
+  background-color: #4393f5;
   color: #000000;
 }

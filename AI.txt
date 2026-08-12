@@ -163,5 +163,5 @@ Format: YYYY-MM-DD  <task summary>
             comes from copy.tsx.
             Tests were rewritten rather than copied — they assert against the LIVE config,
             so e.g. "source: Teams is rejected" is now a true statement about THIS config.
-            39 tests, tsc clean, walked the whole app in a browser. docs/ deliberately NOT
-            rebuilt, so nothing published yet.
+            39 tests, tsc clean, walked the whole app in a browser. 
+2026-08-10  Created an advanced search panel in KnowledgeBank. AI-coded under firm direction.
