@@ -9,26 +9,38 @@ date,recipient,role,category,note,source,awarded_by,sub_topic
 2026-05-21,Ana Silva,Mobile,SwiftUI,"Pushing a new screen: use NavigationStack + NavigationLink. NavigationView is deprecated as of iOS 16.",Manual,Sofia Rossi,navigation
 2026-05-26,Priya Nair,Full-stack,React,,Manual,Zoe Anderson,
 2026-05-28,Yuki Sato,Frontend,CSS,"z-index not working? It only applies to positioned elements, and it is scoped by its stacking context.",Manual,,layout
-2026-06-02,Aisha Okafor,Frontend,React,"Component re-renders too often -- wrap expensive children in React.memo and memoize callbacks with useCallback so their props stay referentially stable.",Manual,Priya Nair,performance
+2026-06-02,Aisha Okafor,Frontend,React,"Component re-renders too often -- wrap expensive children in React.memo and memoize callbacks with useCallback so their props stay referentially stable.",Manual,Priya Nair,performance; hooks
 2026-06-04,Priya Nair,Full-stack,JavaScript,"Debounce vs throttle: debounce fires after activity stops (a search box); throttle fires at most once per interval (scroll handlers).",Manual,Zoe Anderson,events
 2026-06-06,Hana Kim,Mobile,SwiftUI,"List not updating? The model needs to be a class conforming to ObservableObject with @Published properties.",Manual,Zoe Anderson,data flow
-2026-06-09,Mei Lin Chen,Frontend,CSS,"Use gap instead of margins to space flex and grid children -- no more last-child margin hacks.",Manual,Fatima Al-Sayed,flexbox
+2026-06-09,Mei Lin Chen,Frontend,CSS,"Use gap instead of margins to space flex and grid children -- no more last-child margin hacks.",Manual,Fatima Al-Sayed,flexbox; grid
 2026-06-11,Diego Hernandez,Backend,JavaScript,"Optional chaining a?.b?.c short-circuits to undefined instead of throwing when something is null or undefined.",Manual,Priya Nair,syntax
 2026-06-13,Priya Nair,Full-stack,React,"Lifting state up vs context: reach for context only for truly global values like theme or auth; overusing it re-renders everything below.",Manual,Zoe Anderson,state
 2026-06-17,Carlos Mendez,Mobile,SwiftUI,"Animate a change by wrapping the mutation in withAnimation { } or attaching .animation(_:value:) to the view.",Manual,Hana Kim,animation
-2026-06-19,Aisha Okafor,Frontend,React,"Avoid stale state in a setInterval callback by using the functional updater setCount(c => c + 1) or a ref instead of the captured value.",Manual,Kwame Mensah,hooks
+2026-06-19,Aisha Okafor,Frontend,React,"Avoid stale state in a setInterval callback by using the functional updater setCount(c => c + 1) or a ref instead of the captured value.",Manual,Kwame Mensah,hooks; state
 2026-06-23,Zoe Anderson,Full-stack,CSS,"Sticky header: use position: sticky with top: 0, and make sure no ancestor has overflow hidden or it silently stops working.",Manual,Ingrid Larsson,layout
 2026-06-25,Sofia Rossi,Mobile,SwiftUI,"Keep the SwiftUI body cheap -- it recomputes often; move heavy work into the model or cache the result.",Manual,Ana Silva,performance
 2026-06-27,Priya Nair,Full-stack,JavaScript,,Manual,Diego Hernandez,
 2026-06-30,Raj Patel,Backend,JavaScript,"Array de-dupe one-liner: [...new Set(arr)] removes duplicates while preserving order.",Manual,,arrays
-2026-07-01,Mei Lin Chen,Frontend,React,"Controlled vs uncontrolled inputs: a controlled input's value comes from state (value + onChange); an uncontrolled one reads from a ref on submit.",Manual,Priya Nair,forms
+2026-07-01,Mei Lin Chen,Frontend,React,"Controlled vs uncontrolled inputs: a controlled input's value comes from state (value + onChange); an uncontrolled one reads from a ref on submit.",Manual,Priya Nair,forms; state
 2026-07-02,Priya Nair,Full-stack,CSS,"Truncate text with an ellipsis: white-space: nowrap; overflow: hidden; text-overflow: ellipsis; on a fixed-width element.",Manual,Zoe Anderson,layout
 2026-07-02,Hana Kim,Mobile,SwiftUI,"Dismiss the keyboard in SwiftUI with @FocusState and set the focused field to nil.",Manual,Sofia Rossi,forms
 2026-07-03,Aisha Okafor,Frontend,JavaScript,"structuredClone(obj) deep-copies most objects natively -- no more JSON.parse(JSON.stringify(...)) round-trips.",Email,Zoe Anderson,objects
 2026-07-03,Priya Nair,Full-stack,React,,Manual,Diego Hernandez,
 2026-07-01,Ingrid Larsson,Frontend,React,"useRef holds a mutable value that persists across renders WITHOUT causing a re-render when it changes — reach for it for timers, DOM nodes, or the previous value of something.",Manual,Aisha Okafor,hooks
-2026-07-02,Grace Mueller,Frontend,React,"Derive, don't sync: if a value can be computed from props or state during render, compute it there instead of storing it in state and updating it from a useEffect.",Manual,Priya Nair,state
+2026-07-02,Grace Mueller,Frontend,React,"Derive, don't sync: if a value can be computed from props or state during render, compute it there instead of storing it in state and updating it from a useEffect.",Manual,Priya Nair,state; hooks
 2026-07-03,Fatima Al-Sayed,Frontend,React,"State updates are asynchronous and batched — the variable won't change on the next line. Read the new value on the next render, or use the functional updater setX(prev => ...).",Manual,Mei Lin Chen,state
 2026-07-03,Yuki Sato,Frontend,React,"Fetching in useEffect? Guard the response race: set an ignore flag (or use AbortController) in the cleanup so a slow earlier request can't overwrite newer data.",Manual,Zoe Anderson,effects
 2026-07-02,Aisha Okafor,Frontend,React,"Keep hooks unconditional: always call them at the top level, never inside if statements or loops, so their order stays stable across every render.",Manual,Priya Nair,hooks
+2026-07-06,Aisha Okafor,Frontend,React,"Pushing to a state array does nothing -- React compares by reference, so it never sees a change. Build a new array instead: setItems([...items, next]).",Manual,Mei Lin Chen,state
+2026-07-07,Aisha Okafor,Frontend,React,"It's className, not class -- class is a reserved word in JavaScript. Same reason a label uses htmlFor instead of for.",Manual,Yuki Sato,jsx
+2026-07-08,Yuki Sato,Frontend,React,"onClick={handleDelete(id)} calls the function during render instead of on click. Wrap it: onClick={() => handleDelete(id)}.",Manual,Aisha Okafor,events
+2026-07-09,Aisha Okafor,Frontend,React,,Manual,Priya Nair,
+2026-07-13,Ingrid Larsson,Frontend,React,"{count && <Badge/>} renders a literal 0 when count is 0, because 0 is falsy but still a valid child. Use {count > 0 && ...} or a ternary.",Manual,Aisha Okafor,jsx
+2026-07-14,Aisha Okafor,Frontend,React,"Return several elements without an extra wrapper div by using a fragment: <>...</>. Use the long form <React.Fragment key={id}> when the list needs a key.",Manual,Grace Mueller,jsx
+2026-07-16,Grace Mueller,Frontend,React,,Manual,,
+2026-07-20,Aisha Okafor,Frontend,React,"Props are read-only. To change a value the parent owns, take a callback down as a prop and call it -- data flows one way, events flow back up.",Manual,Fatima Al-Sayed,props
+2026-07-22,Mei Lin Chen,Frontend,React,"A form that reloads the whole page on submit is missing e.preventDefault() in its onSubmit handler.",Manual,Aisha Okafor,forms
+2026-07-27,Aisha Okafor,Frontend,React,,Email,Zoe Anderson,hooks
 2026-08-01,Aisha Okafor,Frontend,React,"Updates not appearing on live site because I forgot to npm run build",Email,,deploy
+2026-08-03,Nina Petrova,Full-stack,React,"useMemo is for genuinely expensive work, not every derived value -- the dependency comparison costs something too.",Manual,,
+2026-08-07,Aisha Okafor,Frontend,React,"Why is my state one render behind inside an event handler? The value was captured when that render happened. Read it from the functional updater, or keep it in a ref.",Manual,Priya Nair,hooks
