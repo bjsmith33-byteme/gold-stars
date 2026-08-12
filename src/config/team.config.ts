@@ -87,6 +87,26 @@ const config: TeamConfig = {
     ],
   },
 
+  // Knowledge-Base search vocabulary: what people TYPE → the sub-topic tag they mean, so a
+  // search reaches the right entries even when it uses none of the words those entries use.
+  // Each `canonical` below is a tag that actually appears in the sample CSV — that's the rule
+  // to keep when you replace these with your own. Add an alias the first time someone
+  // searches for a thing by the wrong name and finds nothing.
+  //
+  // Two things worth knowing before you edit: multi-word aliases are fine (they're matched
+  // longest-phrase-first), and a phrase should belong to only ONE group — if two groups claim
+  // the same alias, the first one wins and the second silently never matches it.
+  search: {
+    synonyms: [
+      { canonical: "hooks", aliases: ["hook", "usestate", "useeffect", "use state", "use effect"] },
+      { canonical: "state", aliases: ["setstate", "stateful", "prop drilling"] },
+      { canonical: "forms", aliases: ["form", "input", "controlled component", "validation"] },
+      { canonical: "performance", aliases: ["slow", "memo", "usememo", "re-render", "rerender"] },
+      { canonical: "flexbox", aliases: ["flex", "flex-box"] },
+      { canonical: "async", aliases: ["promise", "await", "fetch"] },
+    ],
+  },
+
   features: {
     // Stage stars locally and preview the board before submitting a batch by email.
     previewMode: true,
