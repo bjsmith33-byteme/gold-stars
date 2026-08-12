@@ -28,8 +28,10 @@ export function Home() {
   const { events, agg, error, previewMode, draft, addDraft, updateDraft, removeDraft, clearDraft } =
     useBoard();
 
-  // Deep link: "#/?award=1&chat=qm" opens the composer with a chat preselected. This is the
-  // entry point from a pinned Teams tab / pinned link, so it must keep working. Before the
+  // Deep link: "#/?award=1&chat=web" opens the composer with one of `chat.monitoredChats`
+  // preselected (see team.config.ts — the key must exist there, or it falls back to the
+  // first). This is the entry point from a pinned chat tab / pinned link, so it must keep
+  // working for a team that turns the composer on. Before the
   // router landed this was parsed by a hand-rolled parseRoute() in App.tsx; useSearchParams
   // reads the same query string out of the hash.
   const [searchParams] = useSearchParams();

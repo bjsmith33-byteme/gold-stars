@@ -7,12 +7,12 @@ import TEAM from "../config/team.config.ts";
 export interface StarEvent {
   date: string; // YYYY-MM-DD
   recipient: string;
-  role: string; // "Dev" | "QM"
+  role: string; // one of ROLES — see roles.values in team.config
   category: string; // knowledge area — see CATEGORIES
   note: string; // problem & solution summary; its presence = "in the knowledge base"
   source: string; // how the row was entered — see SOURCES
   awarded_by: string; // optional; blank for self-research
-  sub_topic: string; // optional free-text sub-division of the category (emergent), e.g. "LPR mapping"
+  sub_topic: string; // optional "; "-separated tags within the category (emergent) — see subTopicsOf
 }
 
 export interface Tally {

@@ -329,7 +329,7 @@ test("encode(decode(encode(s))) is a fixed point", () => {
   const s = st({
     q: "fragment",
     to: "2026-07-01",
-    excluded: { sub_topic: ["Read-only", "HH Visit sets"], role: ["Backend"] },
+    excluded: { sub_topic: ["Read-only", "Reusable components"], role: ["Backend"] },
   });
   const once = encodeSearch(s).toString();
   assert.equal(encodeSearch(decodeSearch(new URLSearchParams(once))).toString(), once);
