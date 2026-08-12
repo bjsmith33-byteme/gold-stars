@@ -23,9 +23,37 @@ export const HOW_TO_EARN: ReactNode = (
   </>
 );
 
-/** Placeholder for the Award form's free-text "Sub-topic" field — two examples of the
- *  finer labels your team uses within an area. */
-export const SUB_TOPIC_PLACEHOLDER = "e.g. hooks, flexbox";
+/** Placeholder for the Award form's "Sub-topic" tag entry — ONE example of the finer labels
+ *  your team uses within an area. Deliberately singular and comma-free: the field takes
+ *  several tags now, and a comma here would read as "type them like this". */
+export const SUB_TOPIC_PLACEHOLDER = "e.g. hooks";
+
+/** The "How search works" explainer on the Knowledge Base page. Describes the search's real
+ *  behavior, so keep it in step with `compileQuery`/`matchesSearch` in src/lib/search.ts — and
+ *  with the `search.synonyms` you configure, since the second paragraph promises they exist. */
+export const KEYWORD_SEARCH_HELP: ReactNode = (
+  <>
+    <p>
+      The box matches <strong>every</strong> word you type, so each word you add narrows the
+      results. The chips underneath show exactly what's being searched — drop one with{" "}
+      <strong>⨯</strong> if it's cutting too much. Words can land in different places: a search
+      for <em>memo aisha</em> finds an entry where "memo" is in the write-up and "Aisha" is the
+      person who solved it.
+    </p>
+    <p>
+      Common words (<em>how</em>, <em>the</em>, <em>a</em>, <em>is</em>…) are ignored, so you can
+      type a question the way you'd ask it. Some words are also mapped to the team's{" "}
+      <strong>sub-topics</strong> — searching <em>usestate</em> finds entries tagged{" "}
+      <strong>hooks</strong> even when they never use that word. The chip shows it when that
+      happens.
+    </p>
+    <p className="mb-0">
+      The <strong>sub-topic chips</strong> are exact: they match how entries are actually tagged,
+      while the box searches the write-up text. An entry can carry several tags, so it shows up
+      under each of them — click a chip to see everything on that subject.
+    </p>
+  </>
+);
 
 /** The short reminder shown at the top of the Award-a-Star form (both modes). */
 export const WHAT_EARNS_A_STAR: ReactNode = (

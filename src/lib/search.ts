@@ -117,6 +117,60 @@ export function orderedByKnown(present: Iterable<string>, known: readonly string
   return [...inOrder, ...extra];
 }
 
+// ── Sub-topic tags ───────────────────────────────────────────────────────────
+// One entry can be ABOUT several things, so the `sub_topic` CSV cell holds a LIST:
+// "Forms; Validation". The column stays a plain string, which is what keeps this additive —
+// parseCsv, toCsvRow, overlay.ts and teams.ts are untouched, and a legacy single-value
+// cell is simply a one-element list.
+//
+// Semicolon rather than comma because `sub_topic` is the LAST CSV column: a comma would
+// force the cell to stay quoted, and a hand-edit in the GitLab web editor that drops the
+// quote silently turns an 8-field row into 9 and shifts every column. A semicolon needs no
+// quoting either way, so the row survives being hand-typed.
+//
+// This lives HERE, in the config-free module, rather than in aggregate.ts — the sub_topic
+// facet can't be built without it, and search.test.ts has to stay config-free (see the
+// header). aggregate.ts re-exports all four names, so every importer still reads them from
+// there and there is only ever one implementation.
+
+/** The separator WRITTEN between tags. Parsing accepts ";" with any surrounding space. */
+export const SUB_TOPIC_SEP = "; ";
+
+/** Split a raw `sub_topic` cell into its tags: trimmed, blanks dropped, de-duped
+ *  case-insensitively keeping the first casing seen (so "Forms" and "forms" can't show up as two
+ *  facet options for one thing). Order is preserved, and the FIRST tag is the entry's home
+ *  in the knowledge-base tree — the rest are cross-references. */
+export function splitSubTopics(raw: string): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const part of raw.split(";")) {
+    const tag = part.trim();
+    if (!tag) continue;
+    const key = tag.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(tag);
+  }
+  return out;
+}
+
+/** One event's sub-topic tags. */
+export function subTopicsOf(e: StarEvent): string[] {
+  return splitSubTopics(e.sub_topic);
+}
+
+/** The tag an entry is FILED under in the KB tree — its first — or "" when untagged. */
+export function primarySubTopic(e: StarEvent): string {
+  return subTopicsOf(e)[0] ?? "";
+}
+
+/** Serialize tags back into a `sub_topic` cell. Round-trips through the splitter, so a tag
+ *  that itself contains a ";" is divided rather than smuggling a delimiter into the cell,
+ *  and joinSubTopics(splitSubTopics(x)) is a fixed point. */
+export function joinSubTopics(tags: Iterable<string>): string {
+  return splitSubTopics([...tags].join(";")).join(SUB_TOPIC_SEP);
+}
+
 // ── State ────────────────────────────────────────────────────────────────────
 
 export function emptySearchState(): SearchState {
@@ -179,10 +233,31 @@ export function dateBounds(events: StarEvent[], today: string): DateBounds {
   return { min: min || today, max };
 }
 
-/** The value a facet matches on. Trimmed so it agrees with the grouping pass in
- *  KnowledgeBase, which trims sub_topic before bucketing. */
-function facetValue(e: StarEvent, key: FacetKey): string {
-  return e[key].trim();
+/** The value(s) a facet matches on — a list because `sub_topic` holds several tags. Every
+ *  other facet yields exactly one, so the multi-value code paths below degenerate to the
+ *  single-value behavior for them. Trimmed so it agrees with the grouping pass in
+ *  KnowledgeBase. An untagged row yields [""], i.e. it behaves exactly like a row with one
+ *  blank value and lands in the "General" option as before. */
+function facetValues(e: StarEvent, key: FacetKey): string[] {
+  if (key === "sub_topic") {
+    const tags = subTopicsOf(e);
+    return tags.length ? tags : [""];
+  }
+  return [e[key].trim()];
+}
+
+/** Is this row filtered OUT by one facet?
+ *
+ *  For a multi-valued facet the row is dropped only when EVERY one of its values is
+ *  excluded. That "every", not "some", is load-bearing: the chips express "show me
+ *  Forms" by excluding every OTHER tag, so `some` would hide the very entry tagged
+ *  "Validation; Forms" that the Forms chip was clicked to find. Read the other way round,
+ *  a row survives as long as it is still about something you didn't rule out.
+ *
+ *  Single-valued facets have one element, so `every` is the old `includes` test verbatim. */
+function failsFacet(e: StarEvent, key: FacetKey, excluded: readonly string[]): boolean {
+  if (excluded.length === 0) return false; // keeps the predicate total
+  return facetValues(e, key).every((v) => excluded.includes(v));
 }
 
 /** The checkbox list for one facet: every value PRESENT in the given rows, and nothing else.
@@ -197,18 +272,179 @@ export function facetOptions(
   key: FacetKey,
   order?: readonly string[],
 ): FacetOption[] {
-  const present = new Set(events.map((e) => facetValue(e, key)));
+  const present = new Set(events.flatMap((e) => facetValues(e, key)));
   const hasBlank = present.delete("");
   const values = order ? orderedByKnown(present, order) : uniqueSorted(present);
   if (hasBlank) values.push("");
   return values.map((value) => ({ value, label: value || BLANK_LABEL[key] }));
 }
 
+// ── The keyword query ────────────────────────────────────────────────────────
+// Typing a question into the box used to fail silently: every whitespace-separated word had
+// to appear somewhere, so "how do I fix a broken form" required "how", "do" and "fix"
+// as substrings and returned nothing. Two fixes, both in compileQuery so the chips
+// under the box and the predicate can't drift:
+//
+//   * function words are dropped, and
+//   * a term can be satisfied by any of its team-vocabulary synonyms.
+//
+// Both only ever WIDEN the result set — dropping a conjunct and OR-ing alternatives into one
+// can't reject a row that used to pass — so the guarantee that no existing ?q= link loses a
+// result still holds.
+
+/** Team vocabulary: the words people type → the tag they actually mean. `canonical` should
+ *  be an existing sub-topic tag, so a synonym hit and a chip click reach the same entries. */
+export interface SynonymGroup {
+  canonical: string;
+  aliases: string[];
+}
+
+/** One conjunct of the query: satisfied when the literal OR any expansion is found in any
+ *  searched field, and every term must be satisfied.
+ *
+ *  The two lists are tested DIFFERENTLY on purpose. `literal` is what the user typed and gets
+ *  the same permissive substring test as always, so no existing ?q= link can lose a result.
+ *  `expansions` are words this module added on the user's behalf, and they're matched on word
+ *  boundaries — otherwise expanding "javascript" to a short tag like "js" would quietly match
+ *  "jsx", and the synonym map would cost more precision than it bought recall.
+ *
+ *  `canonical` is set only when a synonym group matched, so the UI can show "typed → Tag"
+ *  instead of leaving a surprising hit looking like a bug. */
+export interface QueryTerm {
+  text: string; // exactly what the user typed for this term
+  literal: string; // lowercased `text`, substring-tested
+  expansions: string[]; // lowercased synonyms, whole-word-tested
+  canonical?: string; // the group's display form, when one matched
+}
+
+export interface CompiledQuery {
+  terms: QueryTerm[];
+  ignored: string[]; // function words dropped from the query
+}
+
+/** English function words. Generic to the language, not to any team, so they live here
+ *  rather than in team.config. Dropping them matters most for the one-letter ones: "i" and
+ *  "a" are substrings of nearly every write-up, so they constrain nothing while making the
+ *  query look like it did something. */
+const STOPWORDS = new Set([
+  "a", "an", "and", "any", "are", "as", "at", "be", "but", "by", "can", "could", "did", "do",
+  "does", "for", "from", "get", "had", "has", "have", "how", "i", "if", "in", "into", "is",
+  "it", "its", "me", "my", "of", "on", "or", "our", "should", "that", "the", "their", "then",
+  "there", "these", "this", "to", "was", "we", "were", "what", "when", "where", "which",
+  "who", "why", "will", "with", "would", "you", "your",
+]);
+
+/** Split a query into comparable tokens. Leading/trailing punctuation is stripped so
+ *  "plan?" finds "plan", but inner characters survive — "read-only" and "63000" have to stay
+ *  whole to be worth searching. */
+function tokenize(q: string): string[] {
+  return q
+    .toLowerCase()
+    .split(/\s+/)
+    .map((t) => t.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, ""))
+    .filter(Boolean);
+}
+
+/** Compile the keyword box into the conjuncts the predicate tests and the chips display.
+ *
+ *  Synonym phrases are matched LONGEST-FIRST, which is what makes multi-word aliases work:
+ *  "view only" has to be recognized as one term before its words are considered separately,
+ *  or "only" would be filtered as a function word and "view" left to fend for itself.
+ *
+ *  If filtering would leave nothing (the query was all function words), the raw tokens are
+ *  restored instead — a typed query must never quietly become "show everything". */
+export function compileQuery(q: string, groups: readonly SynonymGroup[] = []): CompiledQuery {
+  const tokens = tokenize(q);
+  if (tokens.length === 0) return { terms: [], ignored: [] };
+
+  // phrase (as tokens joined by " ") → the group that claims it.
+  const byPhrase = new Map<string, SynonymGroup>();
+  let longest = 1;
+  for (const g of groups) {
+    for (const phrase of [g.canonical, ...g.aliases]) {
+      const key = tokenize(phrase).join(" ");
+      if (!key) continue;
+      if (!byPhrase.has(key)) byPhrase.set(key, g);
+      longest = Math.max(longest, key.split(" ").length);
+    }
+  }
+
+  const terms: QueryTerm[] = [];
+  const ignored: string[] = [];
+
+  for (let i = 0; i < tokens.length; ) {
+    let matched = false;
+    for (let len = Math.min(longest, tokens.length - i); len >= 1 && !matched; len--) {
+      const slice = tokens.slice(i, i + len);
+      const g = byPhrase.get(slice.join(" "));
+      if (!g) continue;
+      const text = slice.join(" ");
+      terms.push({
+        text,
+        literal: text,
+        // Every OTHER phrasing of the group, so "RO" also reaches a row that spells out
+        // "view only" and not just one that says "read-only".
+        expansions: uniqueSorted(
+          [g.canonical, ...g.aliases].map((p) => p.toLowerCase()).filter((p) => p !== text),
+        ),
+        canonical: g.canonical,
+      });
+      i += len;
+      matched = true;
+    }
+    if (matched) continue;
+
+    const token = tokens[i++];
+    if (STOPWORDS.has(token)) ignored.push(token);
+    else terms.push({ text: token, literal: token, expansions: [] });
+  }
+
+  if (terms.length === 0) {
+    return { terms: tokens.map((t) => ({ text: t, literal: t, expansions: [] })), ignored: [] };
+  }
+  return { terms, ignored };
+}
+
+/** Is `needle` in `haystack` as a whole word? Used for synonyms this module added rather than
+ *  the user typed — see QueryTerm. Hand-rolled instead of a RegExp so compileQuery's output
+ *  stays plain data (comparable with deepEqual, and cheap to build per keystroke). */
+function containsWord(haystack: string, needle: string): boolean {
+  if (!needle) return false;
+  const wordChar = /[\p{L}\p{N}]/u;
+  for (let from = 0; ; ) {
+    const i = haystack.indexOf(needle, from);
+    if (i < 0) return false;
+    const before = haystack[i - 1];
+    const after = haystack[i + needle.length];
+    if (!(before && wordChar.test(before)) && !(after && wordChar.test(after))) return true;
+    from = i + 1;
+  }
+}
+
+/** Does one row satisfy every term of the compiled query? */
+function matchesQuery(e: StarEvent, q: CompiledQuery): boolean {
+  if (q.terms.length === 0) return true;
+  const fields = KEYWORD_FIELDS.map((f) => e[f].toLowerCase());
+  return q.terms.every((t) =>
+    fields.some((f) => f.includes(t.literal) || t.expansions.some((x) => containsWord(f, x))),
+  );
+}
+
 // ── The predicate ────────────────────────────────────────────────────────────
 
 /** Does one row survive the whole filter? Total — every criterion is a plain conjunct, and
- *  an empty exclusion list is simply a test nothing fails. */
-export function matchesSearch(e: StarEvent, s: SearchState, b: DateBounds): boolean {
+ *  an empty exclusion list is simply a test nothing fails.
+ *
+ *  `q` is the PRE-compiled keyword query. It's a parameter rather than derived here so the
+ *  collection-level functions compile once per call instead of once per row, and so the chip
+ *  row can render the exact object the predicate used. Omit it and the query is compiled from
+ *  `s.q` with no team synonyms — stopword filtering still applies, since that's generic. */
+export function matchesSearch(
+  e: StarEvent,
+  s: SearchState,
+  b: DateBounds,
+  q: CompiledQuery = compileQuery(s.q),
+): boolean {
   if (!s.includeNoNote && !e.note.trim()) return false;
 
   const from = s.from || b.min;
@@ -216,24 +452,27 @@ export function matchesSearch(e: StarEvent, s: SearchState, b: DateBounds): bool
   if (e.date < from || e.date > to) return false;
 
   for (const k of FACET_KEYS) {
-    if (s.excluded[k].includes(facetValue(e, k))) return false;
+    if (failsFacet(e, k, s.excluded[k])) return false;
   }
 
-  // Multi-term AND: every whitespace-separated term must appear in at least one field,
-  // though different terms may land in different fields. A strict superset of matching the
-  // query as one substring — any row containing a phrase also contains each of its words —
-  // so no existing ?q= link can lose a result, while a query whose words are split across
-  // two fields starts working instead of matching nothing.
-  const terms = s.q.trim().toLowerCase().split(/\s+/).filter(Boolean);
-  if (terms.length === 0) return true;
-  const fields = KEYWORD_FIELDS.map((f) => e[f].toLowerCase());
-  return terms.every((t) => fields.some((f) => f.includes(t)));
+  // Multi-term AND: every term must be satisfied in at least one field, though different
+  // terms may land in different fields. A strict superset of matching the query as one
+  // substring — any row containing a phrase also contains each of its words — so no existing
+  // ?q= link can lose a result, while a query whose words are split across two fields starts
+  // working instead of matching nothing. Within a term it's an OR over the synonyms.
+  return matchesQuery(e, q);
 }
 
 /** Filter, preserving input order — the caller's grouping pass sorts within its own buckets
  *  and relies on nothing else, but stable order keeps the change invisible. */
-export function applySearch(events: StarEvent[], s: SearchState, b: DateBounds): StarEvent[] {
-  return events.filter((e) => matchesSearch(e, s, b));
+export function applySearch(
+  events: StarEvent[],
+  s: SearchState,
+  b: DateBounds,
+  synonyms?: readonly SynonymGroup[],
+): StarEvent[] {
+  const q = compileQuery(s.q, synonyms);
+  return events.filter((e) => matchesSearch(e, s, b, q));
 }
 
 /** How many rows each facet option would yield, as the number to show beside its checkbox.
@@ -251,38 +490,41 @@ export function facetCounts(
   events: StarEvent[],
   s: SearchState,
   b: DateBounds,
+  synonyms?: readonly SynonymGroup[],
 ): Record<FacetKey, Map<string, number>> {
   const corpus = corpusFor(events, s.includeNoNote);
+  const q = compileQuery(s.q, synonyms);
 
   const counts = {} as Record<FacetKey, Map<string, number>>;
   for (const k of FACET_KEYS) {
-    counts[k] = new Map(corpus.map((e) => [facetValue(e, k), 0]));
+    counts[k] = new Map(corpus.flatMap((e) => facetValues(e, k).map((v): [string, number] => [v, 0])));
   }
 
   // Everything except the facets: whatever survives here is what the facets get to divide up.
   const bare: SearchState = { ...s, excluded: emptySearchState().excluded };
 
   for (const e of corpus) {
-    if (!matchesSearch(e, bare, b)) continue;
+    if (!matchesSearch(e, bare, b, q)) continue;
 
     let failed: FacetKey | null = null;
     let failures = 0;
     for (const k of FACET_KEYS) {
-      if (s.excluded[k].includes(facetValue(e, k))) {
+      if (failsFacet(e, k, s.excluded[k])) {
         failed = k;
         if (++failures > 1) break;
       }
     }
 
+    // A multi-tag row counts under EVERY tag it carries, so a chip's number reads as
+    // "entries tagged this, given the other criteria".
+    const bump = (k: FacetKey) => {
+      for (const v of facetValues(e, k)) counts[k].set(v, (counts[k].get(v) ?? 0) + 1);
+    };
+
     if (failures === 0) {
-      for (const k of FACET_KEYS) {
-        const v = facetValue(e, k);
-        counts[k].set(v, (counts[k].get(v) ?? 0) + 1);
-      }
+      for (const k of FACET_KEYS) bump(k);
     } else if (failures === 1) {
-      const k = failed!;
-      const v = facetValue(e, k);
-      counts[k].set(v, (counts[k].get(v) ?? 0) + 1);
+      bump(failed!);
     }
   }
 

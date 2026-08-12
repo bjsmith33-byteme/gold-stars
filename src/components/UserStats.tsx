@@ -5,7 +5,7 @@ import ButtonGroup from "react-bootstrap/ButtonGroup";
 import Button from "react-bootstrap/Button";
 import ListGroup from "react-bootstrap/ListGroup";
 import { AREA_EMOJI, displayRole, personStats, type StarEvent } from "../lib/aggregate";
-import { todayYmd, uniqueSorted } from "../lib/search";
+import { dateBounds, todayYmd, uniqueSorted } from "../lib/search";
 import { ROSTER, roleFor } from "../config/roster";
 import { SpecialtyBadge } from "./SpecialtyBadge";
 import TEAM from "../config/team.config";
@@ -14,21 +14,28 @@ import TEAM from "../config/team.config";
 // person is selected — keeps the initial page bundle from pulling in the chart lib.
 const DynamicGraphs = lazy(() => import("./DynamicGraphs"));
 
-type PeriodKey = "30d" | "90d" | "ytd" | "all";
+type PeriodKey = "30d" | "90d" | "ytd" | "all" | "custom";
 const PERIODS: { key: PeriodKey; label: string }[] = [
   { key: "30d", label: "Last 30 days" },
   { key: "90d", label: "Last 90 days" },
   { key: "ytd", label: "This year" },
   { key: "all", label: "All time" },
+  { key: "custom", label: "Custom…" },
 ];
 
-/** cutoff date ("YYYY-MM-DD") for a period, or undefined for all-time. */
-function cutoffFor(period: PeriodKey): string | undefined {
-  if (period === "all") return undefined;
-  if (period === "ytd") return `${new Date().getFullYear()}-01-01`;
+/** The window a period selection means — both ends inclusive, `undefined` for unbounded.
+ *  The quick buttons only ever set a start; "custom" is the one that can also close off the
+ *  right-hand end (a review of "what did I do in Q2"). */
+function rangeFor(
+  period: PeriodKey,
+  custom: { from: string; to: string },
+): { cutoff?: string; until?: string } {
+  if (period === "all") return {};
+  if (period === "custom") return { cutoff: custom.from || undefined, until: custom.to || undefined };
+  if (period === "ytd") return { cutoff: `${new Date().getFullYear()}-01-01` };
   const d = new Date();
   d.setDate(d.getDate() - (period === "30d" ? 30 : 90));
-  return todayYmd(d);
+  return { cutoff: todayYmd(d) };
 }
 
 export function UserStats({
@@ -43,6 +50,8 @@ export function UserStats({
   const today = todayYmd();
   const name = selected; // controlled by the parent so leaderboard clicks can set it
   const [period, setPeriod] = useState<PeriodKey>("90d");
+  // Kept while other periods are selected, so flipping back to Custom doesn't lose the dates.
+  const [custom, setCustom] = useState({ from: "", to: "" });
 
   // Every roster member plus anyone who has a star but isn't on the roster.
   const names = useMemo(
@@ -56,12 +65,21 @@ export function UserStats({
     [events, name],
   );
 
+  // The pickers' outer limits: earliest recorded star → today (or a future-dated draft).
+  const bounds = useMemo(() => dateBounds(events, today), [events, today]);
+  const range = rangeFor(period, custom);
+
   const stats = useMemo(
-    () => (name ? personStats(events, name, { cutoff: cutoffFor(period), today }) : null),
-    [events, name, period, today],
+    () => (name ? personStats(events, name, { ...range, today }) : null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `range` is derived from these
+    [events, name, period, custom.from, custom.to, today],
   );
 
-  const periodLabel = PERIODS.find((p) => p.key === period)!.label.toLowerCase();
+  const periodLabel =
+    period === "custom"
+      ? `${range.cutoff ?? bounds.min} → ${range.until ?? bounds.max}`
+      : PERIODS.find((p) => p.key === period)!.label.toLowerCase();
+  const reversed = period === "custom" && !!custom.from && !!custom.to && custom.from > custom.to;
   const monthMax = stats ? Math.max(1, ...stats.byMonth.map((m) => m.count)) : 1;
   const catMax = stats ? Math.max(1, ...stats.byCategory.map((c) => c.count)) : 1;
 
@@ -82,11 +100,12 @@ export function UserStats({
             </option>
           ))}
         </Form.Select>
-        <ButtonGroup size="sm">
+        <ButtonGroup size="sm" role="group" aria-label="Time range">
           {PERIODS.map((p) => (
             <Button
               key={p.key}
               variant={period === p.key ? "outline-secondary-selected" : "outline-secondary"}
+              aria-pressed={period === p.key}
               onClick={() => setPeriod(p.key)}
             >
               {p.label}
@@ -94,6 +113,46 @@ export function UserStats({
           ))}
         </ButtonGroup>
       </div>
+
+      {/* The custom range. Same controls as the Knowledge Base's advanced search — an
+          <input type="date"> reads back as "YYYY-MM-DD", which is the format the CSV stores
+          and everything here compares, so there's no conversion step. Blank means "open at
+          that end", which is why neither field is required. */}
+      {period === "custom" && (
+        <div className="d-flex flex-wrap gap-2 align-items-center mb-3">
+          <Form.Label htmlFor="stats-from" className="mb-0 small text-body-secondary">
+            From
+          </Form.Label>
+          <Form.Control
+            id="stats-from"
+            type="date"
+            size="sm"
+            value={custom.from}
+            min={bounds.min}
+            max={bounds.max}
+            onChange={(e) => setCustom((c) => ({ ...c, from: e.target.value }))}
+            style={{ maxWidth: "10rem" }}
+          />
+          <Form.Label htmlFor="stats-to" className="mb-0 small text-body-secondary">
+            To
+          </Form.Label>
+          <Form.Control
+            id="stats-to"
+            type="date"
+            size="sm"
+            value={custom.to}
+            min={bounds.min}
+            max={bounds.max}
+            onChange={(e) => setCustom((c) => ({ ...c, to: e.target.value }))}
+            style={{ maxWidth: "10rem" }}
+          />
+          {reversed && (
+            <span className="small text-body-secondary fst-italic">
+              The end date is before the start date.
+            </span>
+          )}
+        </div>
+      )}
 
       {!stats ? (
         <p className="text-body-secondary fst-italic mb-0">

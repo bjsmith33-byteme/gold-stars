@@ -163,5 +163,80 @@ Format: YYYY-MM-DD  <task summary>
             comes from copy.tsx.
             Tests were rewritten rather than copied — they assert against the LIVE config,
             so e.g. "source: Teams is rejected" is now a true statement about THIS config.
-            39 tests, tsc clean, walked the whole app in a browser. 
-2026-08-10  Created an advanced search panel in KnowledgeBank. AI-coded under firm direction.
+            39 tests, tsc clean, walked the whole app in a browser. docs/ deliberately NOT
+            rebuilt, so nothing published yet.
+2026-08-10  Published the config-seam work and caught this repo up (Claude under direction).
+            The 2026-08-01 branch had sat unpushed for nine days, which turned this into a
+            forensic exercise first: the tip commit was titled as if it carried source
+            changes but contained only one file re-saved with different line endings, so the
+            repo LOOKED a generation behind while the real work sat on an unpushed branch on
+            a single machine. Nothing was lost. Lessons I'm keeping: an unpushed branch is
+            the actual risk, not drift; and a commit message is not evidence — check what
+            the commit changed.
+            One genuine leak found before pushing: some of the TypeScript dependencies had
+            been installed from an internal package mirror, so package-lock.json recorded
+            internal hostnames — which would have published them AND broken a clean install
+            for anyone outside. Fixed first. Leak-check BEFORE publishing, and remember the
+            lockfile and the built output are part of the published surface, not just src/.
+            Then brought over two features that had landed in the predecessor: alumni
+            support and a separate non-core-team board on its own /friends page. Both ship
+            DORMANT here (empty alumni list, feature flag off) so the template stays simple;
+            the tests assert the dormant state, and flipping the config makes them fail,
+            which is how I know they're wired to the config rather than vacuous. Added
+            SETUP.md — the step-by-step adoption guide the README's table wasn't — plus a
+            .gitattributes to stop the line-ending churn that caused the phantom commit, and
+            skewed the sample data so it looks like a real board (one area and one person
+            dominate) with more beginner-level Q&A.
+2026-08-10  Advanced search on the Knowledge Base (Claude under direction). The KB had one
+            keyword box and an area dropdown, while the CSV carried four more filterable
+            fields nothing could reach, and no search state survived being shared.
+            Decisions I made here: put the whole filter core in one dependency-free module
+            (src/lib/search.ts) that imports the row shape as a TYPE only, so it never pulls
+            the config in at runtime and its tests hold whatever a team configures; derive
+            the facet options from the DATA rather than the config, so a configured-but-
+            unused area simply isn't offered and the feature needs zero config to adopt; and
+            store the selection as EXCLUDED values rather than included ones, so "no filter"
+            and "nothing selected" can't be confused, a shared link still means what it said
+            after new data arrives, and an unfiltered board is a bare #/kb.
+            This is the first code here that WRITES the URL. Both sync directions compare the
+            state as the encoder would write it, and because encoding is canonical that
+            comparison is self-guarding — no ping-pong between the two effects, and a
+            fixed-point test proves it rather than decorating it. Writes are debounced and
+            replace history, so Back isn't "undo one keystroke".
+2026-08-11  Sub-topics became multi-value tags, and the search learned the team's words
+            (Claude under direction; being ported here from the predecessor now).
+            This round came out of a usability test. Nine of the ten suggestions were small;
+            the tenth — "can an entry have several sub-topics, so they act like keywords?" —
+            turned out to be the thing the other search suggestions were waiting on. The
+            sub-topic column held ONE value, so an entry could only say it was about one
+            thing, and the predecessor's data had already deformed around that: a row tagged
+            with a compound label that existed only because it couldn't hold two.
+            My call on the modelling question, which I'd been talking myself out of: keep
+            sub-topics an exact-match VOCABULARY rather than folding them into the free-text
+            search. Folding them in would have collapsed the difference between an entry
+            being ABOUT something and merely MENTIONING it, and made the synonym work
+            almost worthless. Kept apart, the synonym map is worth MORE than before —
+            mapping someone's words onto a tag can now reach an entry whose primary label is
+            something else, which is exactly the case a single-value column can never serve.
+            Decisions worth recording: the tags are separated by a semicolon, not a comma,
+            because the column is LAST in the CSV — a comma needs the cell quoted, and a
+            hand-edit that drops the quote silently shifts every column. An entry is FILED
+            under its first tag only, so it appears once when browsing and the counts still
+            add up; the rest show as cross-references. And the chip row replaced the
+            sub-topic dropdown instead of joining it — the previous round left one filter
+            with two controls and I didn't want a second.
+            Also from the same test: the two halves of the Award form asked for the same
+            write-up in two different voices, with different labels, shapes and placeholder
+            text, so they're one shared field now; the CSV row preview moved behind the
+            existing "Advanced" disclosure (which incidentally fixed a real mismatch — the
+            preview didn't match the row either hand-off actually sends); My Stats gained a
+            custom date range alongside the quick buttons; and the redundant per-area bars
+            came off. That last one was a one-line CONFIG change rather than a deletion,
+            because the flag already existed and the bars are still the fallback when charts
+            are switched off — the seam paying for itself.
+            One bug the tests didn't catch and the browser did: typing "A, B" into the new
+            tag field produced a single tag called "A B", because the comma was being turned
+            into a space instead of the separator. Worth remembering that unit tests covered
+            the parser and not the typing.
+            124 tests in the predecessor, tsc clean, walked the whole app. docs/ not rebuilt
+            here, so nothing is published by this entry.

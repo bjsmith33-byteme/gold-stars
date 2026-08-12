@@ -95,6 +95,18 @@ export interface TeamConfig {
     monitoredChats: MonitoredChat[];
   };
 
+  /** Knowledge-Base search tuning. Omit for none — the box still works, it just takes
+   *  people's words literally. */
+  search?: {
+    /** Your team's vocabulary: what people type → the sub-topic tag they mean. `canonical`
+     *  should be a tag that's actually in use, so a synonym hit and a chip click land on the
+     *  same entries. Matched longest-phrase-first, so multi-word aliases are fine. Add an
+     *  alias the first time someone searches for a thing by the wrong name and finds
+     *  nothing. The shape is declared structurally here (rather than imported) to keep this
+     *  config module free of imports from `lib/` — see `SynonymGroup` in src/lib/search.ts. */
+    synonyms: { canonical: string; aliases: string[] }[];
+  };
+
   /** Turn whole features on/off without deleting their code. */
   features: {
     /** Stage stars locally and preview the board before submitting a batch. */

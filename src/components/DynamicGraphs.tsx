@@ -130,29 +130,33 @@ export function DynamicGraphs({ stats }: { stats: PersonStats }) {
       <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-1">
         <div className="small fw-semibold text-body-secondary">Stars over time</div>
         <div className="d-flex gap-2">
-          <ButtonGroup size="sm">
+          <ButtonGroup size="sm" role="group" aria-label="Chart type">
             <Button
               variant={chartType === "bar" ? "outline-secondary-selected" : "outline-secondary"}
+              aria-pressed={chartType === "bar"}
               onClick={() => setChartType("bar")}
             >
               Bar
             </Button>
             <Button
               variant={chartType === "line" ? "outline-secondary-selected" : "outline-secondary"}
+              aria-pressed={chartType === "line"}
               onClick={() => setChartType("line")}
             >
               Line
             </Button>
           </ButtonGroup>
-          <ButtonGroup size="sm">
+          <ButtonGroup size="sm" role="group" aria-label="Break down by">
             <Button
               variant={!faceted ? "outline-secondary-selected" : "outline-secondary"}
+              aria-pressed={!faceted}
               onClick={() => setFaceted(false)}
             >
               Total
             </Button>
             <Button
               variant={faceted ? "outline-secondary-selected" : "outline-secondary"}
+              aria-pressed={faceted}
               onClick={() => setFaceted(true)}
             >
               By area

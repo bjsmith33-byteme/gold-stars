@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   activeFilterCount,
   applySearch,
+  compileQuery,
   corpusFor,
   dateBounds,
   decodeSearch,
@@ -95,10 +96,10 @@ test("todayYmd zero-pads and stays on the local date", () => {
 
 test("uniqueSorted dedupes, sorts by locale, and keeps blanks", () => {
   // Bare .sort() would strand "configuration" after every capitalized value.
-  assert.deepEqual(uniqueSorted(["Tasks", "IP", "configuration", "Validation", "IP"]), [
-    "configuration",
-    "IP",
-    "Tasks",
+  assert.deepEqual(uniqueSorted(["Forms", "JSX", "hooks", "Validation", "JSX"]), [
+    "Forms",
+    "hooks",
+    "JSX",
     "Validation",
   ]);
   assert.deepEqual(uniqueSorted(["b", "", "a"]), ["", "a", "b"]);
@@ -191,6 +192,97 @@ test("multi-term keyword ANDs, with terms free to land in different fields", () 
   assert.deepEqual(applySearch(EVENTS, st({ q: "fragment diego" }), WIDE), []);
 });
 
+// ── Query compiler: stopwords + synonyms ─────────────────────────────────────
+
+const SYN = [
+  { canonical: "hooks", aliases: ["hook", "usestate", "use effect"] },
+  // A canonical short enough to sit INSIDE another word ("js" is a substring of "jsx"),
+  // which is what the whole-word rule below has to defend against.
+  { canonical: "js", aliases: ["javascript"] },
+];
+
+/** The terms' typed text, for compact assertions. */
+const termTexts = (q: string, groups = SYN) => compileQuery(q, groups).terms.map((t) => t.text);
+
+test("compileQuery drops function words and keeps the rest as terms", () => {
+  const c = compileQuery("how do I fix a broken effect", []);
+  assert.deepEqual(c.terms.map((t) => t.text), ["fix", "broken", "effect"]);
+  assert.deepEqual(c.ignored, ["how", "do", "i", "a"]);
+});
+
+test("compileQuery strips edge punctuation but keeps hyphens and digits whole", () => {
+  assert.deepEqual(compileQuery("re-render?", []).terms.map((t) => t.literal), ["re-render"]);
+  assert.deepEqual(compileQuery("(React 19).", []).terms.map((t) => t.literal), ["react", "19"]);
+});
+
+test("an all-function-word query keeps its raw tokens rather than matching everything", () => {
+  // Silently turning a typed query into "show everything" would read as a bug, not a feature.
+  const c = compileQuery("how do i", []);
+  assert.deepEqual(c.terms.map((t) => t.text), ["how", "do", "i"]);
+  assert.deepEqual(c.ignored, [], "nothing was dropped, because dropping all of it isn't an option");
+});
+
+test("an empty query compiles to no terms, which the predicate treats as no filter", () => {
+  assert.deepEqual(compileQuery("   ", SYN), { terms: [], ignored: [] });
+  assert.deepEqual(applySearch(EVENTS, st({ q: "   " }), WIDE, SYN), [E1, E2, E3]);
+});
+
+test("a synonym term carries the canonical tag and the group's other phrasings", () => {
+  const [term] = compileQuery("usestate", SYN).terms;
+  assert.equal(term.text, "usestate");
+  assert.equal(term.canonical, "hooks", "drives the 'usestate → hooks' chip");
+  assert.deepEqual(term.expansions, ["hook", "hooks", "use effect"], "minus what was typed");
+});
+
+test("multi-word aliases are matched longest-first, before their words are split up", () => {
+  assert.deepEqual(termTexts("use effect"), ["use effect"]);
+  assert.deepEqual(termTexts("use effect forms"), ["use effect", "forms"]);
+  // A leading word that isn't part of any phrase must not swallow the phrase after it.
+  assert.deepEqual(termTexts("stale use effect"), ["stale", "use effect"]);
+});
+
+test("a synonym reaches entries that use a different phrasing", () => {
+  // E1's note says "useEffect runs twice in StrictMode" — it contains neither "hooks" nor
+  // "use effect" as written, and nothing on the board says "usestate".
+  const withTag = ev({ note: "cleanup runs on unmount", sub_topic: "hooks" });
+  assert.deepEqual(applySearch([withTag], st({ q: "usestate" }), WIDE, SYN), [withTag]);
+  assert.deepEqual(applySearch([withTag], st({ q: "use effect" }), WIDE, SYN), [withTag]);
+  assert.deepEqual(applySearch([withTag], st({ q: "usestate" }), WIDE), [], "no groups, no expansion");
+});
+
+test("expansions match whole words only, so a short tag can't match inside another word", () => {
+  // The reason expansions aren't substring-tested: "js" would otherwise hit "jsx" the moment
+  // anyone searched "javascript".
+  const jsx = ev({ note: "jsx needs one root element", sub_topic: "jsx" });
+  assert.deepEqual(applySearch([jsx], st({ q: "javascript" }), WIDE, SYN), []);
+  const js = ev({ note: "plain js has no JSX step", sub_topic: "" });
+  assert.deepEqual(applySearch([js], st({ q: "javascript" }), WIDE, SYN), [js]);
+});
+
+test("what the user typed is still substring-matched, so no old ?q= link loses a result", () => {
+  // "js" typed directly keeps its permissive behavior even though it's also a canonical tag.
+  const jsx = ev({ note: "jsx needs one root element", sub_topic: "jsx" });
+  assert.deepEqual(applySearch([jsx], st({ q: "js" }), WIDE, SYN), [jsx]);
+});
+
+test("a chatty question finds exactly what its content words find", () => {
+  // The whole point: asking in a sentence must not do worse than typing the keywords. Same
+  // content words on both sides — only the function words differ.
+  const keywords = applySearch(EVENTS, st({ q: "runs twice" }), WIDE, SYN);
+  const question = applySearch(EVENTS, st({ q: "why does it run runs twice?" }), WIDE, SYN);
+  assert.deepEqual(question, keywords);
+  assert.ok(keywords.length > 0, "and it isn't vacuously equal");
+  // Before stopword filtering the question returned nothing, because no row says "why".
+  assert.deepEqual(applySearch(EVENTS, st({ q: "why" }), WIDE, SYN), [], "a lone one stays literal");
+});
+
+test("facetCounts uses the same synonyms as the results", () => {
+  const tagged = ev({ recipient: "Priya Nair", note: "cleanup on unmount", sub_topic: "hooks" });
+  const c = facetCounts([tagged, E1], st({ q: "usestate" }), WIDE, SYN);
+  assert.equal(c.recipient.get("Priya Nair"), 1, "counted via the synonym");
+  assert.equal(c.recipient.get("Aisha Okafor"), 0);
+});
+
 test("a whitespace-only keyword filters nothing", () => {
   assert.deepEqual(applySearch(EVENTS, st({ q: "   " }), WIDE), [E1, E2, E3]);
 });
@@ -255,6 +347,95 @@ test("matchesSearch agrees with applySearch row by row", () => {
 test("applySearch preserves input order", () => {
   const shuffled = [E3, E1, E2];
   assert.deepEqual(applySearch(shuffled, st(), WIDE), [E3, E1, E2]);
+});
+
+// ── Sub-topic tags (multi-value facet) ───────────────────────────────────────
+// A separate corpus so the single-value expectations above keep their exact values.
+// T1/T2 both carry "hooks", but only T1 has it as a SECONDARY tag.
+const T1 = ev({ recipient: "Priya Nair", note: "wrap expensive children in memo", sub_topic: "performance; hooks" });
+const T2 = ev({ recipient: "Diego Hernandez", note: "the functional updater avoids a stale value", sub_topic: "hooks; state" });
+const T3 = ev({ recipient: "Aisha Okafor", note: "gap spaces children without margin hacks", sub_topic: "flexbox" });
+const T4 = ev({ recipient: "Sofia Rossi", note: "no tags on this one", sub_topic: "" });
+const TAGGED = [T1, T2, T3, T4];
+
+/** What a chip click encodes: keep one tag by excluding every other present value. */
+function keepOnlyTag(tag: string): SearchState {
+  const all = facetOptions(TAGGED, "sub_topic").map((o) => o.value);
+  return st({ excluded: { sub_topic: all.filter((v) => v !== tag) } });
+}
+
+test("facetOptions lists individual tags, not whole cells", () => {
+  assert.deepEqual(
+    facetOptions(TAGGED, "sub_topic").map((o) => o.value),
+    ["flexbox", "hooks", "performance", "state", ""],
+    "one option per tag, blank last",
+  );
+});
+
+test("a chip keeps every entry carrying that tag, primary or not", () => {
+  // THE regression this design exists to prevent: "hooks" encodes as "exclude flexbox,
+  // performance, state, blank", and T1 is excluded on one of those — but it is still ABOUT
+  // hooks, so it must survive.
+  assert.deepEqual(applySearch(TAGGED, keepOnlyTag("hooks"), WIDE), [T1, T2]);
+  assert.deepEqual(applySearch(TAGGED, keepOnlyTag("flexbox"), WIDE), [T3]);
+  assert.deepEqual(applySearch(TAGGED, keepOnlyTag(""), WIDE), [T4], "the General chip");
+});
+
+test("a tagged row is dropped only when EVERY one of its tags is excluded", () => {
+  // Excluding one tag of two leaves the row reachable by the other.
+  assert.deepEqual(applySearch(TAGGED, st({ excluded: { sub_topic: ["hooks"] } }), WIDE), [
+    T1,
+    T2,
+    T3,
+    T4,
+  ]);
+  // Both of T1's tags gone -> T1 goes. T2 keeps "state" and stays.
+  assert.deepEqual(
+    applySearch(TAGGED, st({ excluded: { sub_topic: ["hooks", "performance"] } }), WIDE),
+    [T2, T3, T4],
+  );
+});
+
+test("an untagged row behaves exactly like one blank value", () => {
+  assert.deepEqual(applySearch(TAGGED, st({ excluded: { sub_topic: [""] } }), WIDE), [T1, T2, T3]);
+});
+
+test("excluding every present tag still yields nothing", () => {
+  const all = facetOptions(TAGGED, "sub_topic").map((o) => o.value);
+  assert.deepEqual(applySearch(TAGGED, st({ excluded: { sub_topic: all } }), WIDE), []);
+});
+
+test("a multi-tag row counts under each of its tags", () => {
+  const c = facetCounts(TAGGED, st(), WIDE);
+  assert.equal(c.sub_topic.get("hooks"), 2, "T2 primary + T1 secondary");
+  assert.equal(c.sub_topic.get("performance"), 1);
+  assert.equal(c.sub_topic.get("state"), 1);
+  assert.equal(c.sub_topic.get(""), 1, "the untagged bucket");
+});
+
+test("chip counts survive the chips' own selection but follow other facets", () => {
+  const own = facetCounts(TAGGED, keepOnlyTag("flexbox"), WIDE);
+  assert.equal(own.sub_topic.get("hooks"), 2, "still answers 'what comes back if I click it'");
+  assert.equal(own.sub_topic.get("flexbox"), 1);
+
+  const other = facetCounts(TAGGED, st({ excluded: { recipient: ["Priya Nair"] } }), WIDE);
+  assert.equal(other.sub_topic.get("performance"), 0, "T1's recipient is filtered out");
+  assert.equal(other.sub_topic.get("hooks"), 1, "only T2 is left carrying it");
+});
+
+test("the keyword box still substring-matches the raw tag cell", () => {
+  // Precision lives in the chips; the box stays a fuzzy fallback over the same text.
+  assert.deepEqual(applySearch(TAGGED, st({ q: "performance" }), WIDE), [T1]);
+  assert.deepEqual(applySearch(TAGGED, st({ q: "state" }), WIDE), [T2]);
+});
+
+test("a chip selection round-trips through the URL", () => {
+  const s = keepOnlyTag("hooks");
+  const back = decodeSearch(new URLSearchParams(encodeSearch(s).toString()));
+  // The codec canonicalizes (uniqueSorted, so the blank leads); what has to survive is the
+  // SET of excluded tags and therefore the results.
+  assert.deepEqual(back.excluded.sub_topic, uniqueSorted(s.excluded.sub_topic));
+  assert.deepEqual(applySearch(TAGGED, back, WIDE), [T1, T2]);
 });
 
 // ── Counts ───────────────────────────────────────────────────────────────────
@@ -329,7 +510,7 @@ test("encode(decode(encode(s))) is a fixed point", () => {
   const s = st({
     q: "fragment",
     to: "2026-07-01",
-    excluded: { sub_topic: ["Read-only", "HH Visit sets"], role: ["Backend"] },
+    excluded: { sub_topic: ["Read-only", "Reusable components"], role: ["Backend"] },
   });
   const once = encodeSearch(s).toString();
   assert.equal(encodeSearch(decodeSearch(new URLSearchParams(once))).toString(), once);

@@ -39,10 +39,10 @@ function good(over: Record<string, string> = {}) {
     recipient: "Aisha Okafor",
     role: "Frontend",
     category: "React",
-    note: "Care plan wouldn't load — the visit needed linking to the episode",
+    note: "The list wouldn't re-render — the key needed to be stable across updates",
     source: "Email",
     awarded_by: "Diego Hernandez",
-    sub_topic: "LPR mapping",
+    sub_topic: "Hooks",
     ...over,
   };
 }

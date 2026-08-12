@@ -7,7 +7,7 @@ import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import Alert from "react-bootstrap/Alert";
 import Spinner from "react-bootstrap/Spinner";
-import { currentMonthKey, monthLabel, getMonth } from "../lib/aggregate";
+import { currentMonthKey, monthLabel, getMonth, subTopicsOf } from "../lib/aggregate";
 import { uniqueSorted } from "../lib/search";
 import type { DraftRow } from "../lib/overlay";
 import { Leaderboard } from "../components/Leaderboard";
@@ -28,8 +28,10 @@ export function Home() {
   const { events, agg, error, previewMode, draft, addDraft, updateDraft, removeDraft, clearDraft } =
     useBoard();
 
-  // Deep link: "#/?award=1&chat=qm" opens the composer with a chat preselected. This is the
-  // entry point from a pinned Teams tab / pinned link, so it must keep working. Before the
+  // Deep link: "#/?award=1&chat=web" opens the composer with one of `chat.monitoredChats`
+  // preselected (see team.config.ts — the key must exist there, or it falls back to the
+  // first). This is the entry point from a pinned chat tab / pinned link, so it must keep
+  // working for a team that turns the composer on. Before the
   // router landed this was parsed by a hand-rolled parseRoute() in App.tsx; useSearchParams
   // reads the same query string out of the hash.
   const [searchParams] = useSearchParams();
@@ -89,7 +91,8 @@ export function Home() {
   const curLabel = monthLabel(curKey);
   const curMonth = getMonth(agg, curKey);
   const pastMonths = agg.months.filter((m) => m.key !== curKey);
-  const subTopics = uniqueSorted(events.map((e) => e.sub_topic).filter(Boolean));
+  // Flattened across tags, not whole cells — "Hooks; Forms" must offer two suggestions.
+  const subTopics = uniqueSorted(events.flatMap((e) => subTopicsOf(e)));
 
   return (
     <div className="d-flex flex-column gap-4">
